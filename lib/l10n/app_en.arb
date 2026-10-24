@@ -1,0 +1,921 @@
+
+{
+  "@@locale": "en",
+  "appName": "Evolyn",
+  "profileAccountCenter": "Account Center",
+  "profileSetings": "Profile & settings",
+  "profileYourProfile": "Your profile",
+  "profileSignInToViewFocus": "Sign in to view your focus",
+  "profileLoadingFocus": "Loading your focus…",
+  "profileUnableToLoadFocus": "Unable to load current focus",
+  "profileNoSavedRoadmap": "No saved roadmap yet",
+  "profileRoadmapSaved": "Roadmap saved",
+  "profilePreferences": "Preferences",
+  "profilePreferencesSubtitle": "Saved on this device for your account.",
+  "profileLanguage": "Language",
+  "profileLanguageSubtitle": "Choose your preferred language.",
+  "profilePrivacySecurity": "Privacy & security",
+  "profilePrivacySecuritySubtitle": "Your account, your choice.",
+  "profileAccountCenterSubtitle": "Manage your credentials and account data.",
+  "profileAccountCenterTileSubtitle": "Password, mobile number and account deletion",
+  "profileYourSpace": "YOUR SPACE",
+  "profileEmailUnavailable": "Email unavailable",
+  "profileLearningJourney": "Your learning journey",
+  "profileEditNameTooltip": "Edit profile name",
+  "profileCurrentFocus": "Current focus",
+  "profileLearningReminders": "Learning reminders",
+  "profileLearningRemindersSubtitle": "A gentle nudge for your daily learning goal",
+  "profileWeeklyRecap": "Weekly progress recap",
+  "profileWeeklyRecapSubtitle": "A summary of completed tasks",
+  "profileProductUpdates": "Product updates",
+  "profileProductUpdatesSubtitle": "News about new Evolyn features",
+  "profileDailyGoal": "Daily learning goal",
+  "profileDailyGoalSubtitle": "{goal} per day",
+  "@profileDailyGoalSubtitle": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
+  "profilePrivacyPolicy": "Privacy policy",
+  "profilePrivacyPolicySubtitle": "How your account and learning data are handled",
+  "profileAccountSecurity": "Account security",
+  "profileAccountSecuritySubtitle": "Your sign-in credentials remain private",
+  "profileAccountSecurityMessage": "Your account is managed by Supabase Authentication. Never share your password or verification codes with anyone.",
+  "profileSigningOut": "Signing out…",
+  "profileFooter": "EVOLYN • GROW AT YOUR PACE",
+  "profilePasswordUpdated": "Password updated successfully.",
+  "profileCouldNotUpdatePassword": "Could not update your password.",
+  "profilePhoneUpdated": "Mobile number verified and updated.",
+  "profileCouldNotUpdatePhone": "Could not update your mobile number.",
+  "profileDeletePermanentlyTitle": "Permanently delete account?",
+  "profileDeleteWarning": "This action is irreversible. Your account, saved roadmaps, learning progress, profile data and other associated data will be permanently deleted according to our deletion policy. Any data that must legally be retained will be handled as described in the privacy policy.",
+  "profileKeepAccount": "Keep my account",
+  "profileDeletePermanently": "Delete permanently",
+  "profileDeleteRequestFailed": "Account deletion request failed.",
+  "profileDeletionCompleted": "Your account deletion has been completed.",
+  "profileDeletionFailed": "Account deletion could not be completed. Please try again.",
+  "profileSavePreferenceFailed": "Could not save this preference locally. Please try again.",
+  "profileEditSignInAgain": "Please sign in again to edit your profile.",
+  "profileNameUpdated": "Profile name updated.",
+  "profileCouldNotUpdateName": "Could not update your profile. Please try again.",
+  "profileChooseLanguage": "Choose language",
+  "profileChooseAppLanguage": "Choose your preferred app language.",
+  "profileLanguageUpdated": "App language updated.",
+  "profileChooseDailyGoal": "Choose a goal you can maintain consistently.",
+  "profileDailyGoalSaved": "Daily goal saved on this device.",
+  "profilePrivacyDescription": "Evolyn may process account details, learning progress, saved roadmaps, and AI mentor conversations to provide app features.",
+  "profilePrivacyReviewNotice": "Before release, connect this section to your reviewed privacy policy and explain retention, data access, and deletion options.",
+  "profileDone": "Done",
+  "profileGotIt": "Got it",
+  "profileLogoutTitle": "Log out of Evolyn?",
+  "profileLogoutMessage": "You will need to sign in again to continue your learning journey.",
+  "profileCancel": "Cancel",
+  "profileLogout": "Log out",
+  "profileLogoutFailed": "Could not log out. Please try again.",
+  "profileEditProfile": "Edit profile",
+  "profileDisplayName": "Display name",
+  "profileSave": "Save",
+  "profileAccountSecurityHeading": "ACCOUNT SECURITY",
+  "profileChangePassword": "Change password",
+  "profileChangePasswordSubtitle": "Set a new account password",
+  "profileMobileNumber": "Mobile number",
+  "profileMobileNumberSubtitle": "Add or change your verified phone number",
+  "profileAccountOwnershipHeading": "ACCOUNT OWNERSHIP",
+  "profileDeleteAccount": "Delete account",
+  "profileDeleteAccountSubtitle": "Permanently delete your account and associated data",
+  "profileDeletionCannotUndo": "Account deletion cannot be undone. Review the deletion warning and privacy policy before confirming.",
+  "profilePasswordMinLength": "Password must contain at least 8 characters.",
+  "profilePasswordsDoNotMatch": "Passwords do not match.",
+  "profileNewPassword": "New password",
+  "profileConfirmNewPassword": "Confirm new password",
+  "profileUpdatePassword": "Update password",
+  "profilePhoneNumberLabel": "Phone number",
+  "profilePhoneNumberHint": "+919876543210",
+  "profilePhoneCountryCodeHelp": "Include your country code.",
+  "profileInvalidPhone": "Enter a valid international phone number.",
+  "profileSendVerificationCode": "Send verification code",
+  "profileVerifyMobile": "Verify mobile number",
+  "profileOtpMessage": "Enter the SMS verification code sent to {phone}.",
+  "@profileOtpMessage": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "profileVerificationCode": "Verification code",
+  "profileInvalidOtp": "Enter the 6-digit verification code.",
+  "profileVerify": "Verify",
+  "profileWhyLeaving": "Why are you leaving?",
+  "profileFeedbackOptional": "Your feedback is optional and helps us improve Evolyn.",
+  "profileDeleteReasonNoNeed": "I no longer need this account",
+  "profileDeleteReasonUnsatisfied": "I am not satisfied with the app",
+  "profileDeleteReasonLearningNeeds": "The app does not meet my learning needs",
+  "profileDeleteReasonPrivacy": "I have privacy or data concerns",
+  "profileDeleteReasonTechnical": "I am experiencing technical problems",
+  "profileDeleteReasonAnotherAccount": "I created another account",
+  "profileDeleteReasonOther": "Other",
+  "profileAnythingElse": "Anything else? (optional)",
+  "profileFeedbackHint": "Share your feedback...",
+  "profileSelectReason": "Please select a reason to continue.",
+  "profileContinue": "Continue",
+
+
+
+  
+  "dashboardLoadErrorTitle": "Could not load your dashboard",
+  "dashboardLoadErrorMessage": "Check your connection and try again.",
+  "retry": "Retry",
+  "goodMorning": "Good morning",
+  "goodAfternoon": "Good afternoon",
+  "goodEvening": "Good evening",
+  "fallbackDisplayName": "friend",
+  "roadmapFocus": "YOUR ROADMAP FOCUS",
+  "noSavedRoadmap": "No saved roadmap yet",
+  "chooseCareersDescription": "Choose careers in Career Recommendations and generate a roadmap. Your saved plan will appear here.",
+  "openRoadmap": "Open roadmap",
+  "nextActions": "Next actions",
+  "plannedTasks": "{count, plural, =0{No planned tasks} =1{1 planned task} other{{count} planned tasks}}",
+  "@plannedTasks": {
+    "description": "Number of planned tasks",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "nextStepsTitle": "Your next steps will appear here",
+  "nextStepsSubtitle": "Generate and save a roadmap to see tasks tailored to your selected careers.",
+  "noTasksTitle": "No tasks were found in this roadmap",
+  "noTasksSubtitle": "Open your roadmap and check that its phases include tasks.",
+  "allTasksCompletedTitle": "All tasks completed!",
+  "allTasksCompletedSubtitle": "You have completed every task in your roadmap. New tasks will appear here when added.",
+  "fallbackTaskTitle": "Roadmap task",
+  "fallbackTaskCategory": "Task",
+  "fallbackPhaseTitle": "Roadmap",
+  "fallbackRoadmapTitle": "Your career roadmap",
+  "oneHour": "1 hour",
+  "hours": "{count, plural, =1{1 hour} other{{count} hours}}",
+  "@hours": {
+    "description": "Estimated duration in hours",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "weekNumber": "Week {week}",
+  "@weekNumber": {
+    "placeholders": {
+      "week": {
+        "type": "num"
+      }
+    }
+  },
+  "liveInProgress": "LIVE · IN PROGRESS",
+  "sessionFinishedResume": "SESSION FINISHED · RESUME",
+  "inProgress": "IN PROGRESS",
+  "roadmapPhases": "ROADMAP PHASES",
+  "stagesInPlan": "Stages in your plan",
+  "timeHorizon": "TIME HORIZON",
+  "monthsShort": "{count} mo",
+  "@monthsShort": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "plannedLearningPeriod": "Planned learning period",
+  "nextMilestone": "NEXT MILESTONE",
+  "nextMilestoneWeek": "NEXT MILESTONE · WEEK {week}",
+  "@nextMilestoneWeek": {
+    "placeholders": {
+      "week": {
+        "type": "num"
+      }
+    }
+  },
+  "nextMilestoneFallback": "Next milestone",
+  "categoryProject": "Project",
+  "categoryReview": "Review",
+  "categoryPractice": "Practice",
+  "categoryFoundation": "Foundation",
+  "categoryCareerSkill": "Career skill",
+
+
+
+
+  
+
+  "roadmapScreenTitle": "Your roadmap",
+  "editRoadmap": "Edit roadmap",
+  "personalizedRoadmap": "PERSONALIZED ROADMAP",
+  "roadmapTitleLabel": "Roadmap title",
+  "overviewLabel": "Overview",
+  "planningHorizonMonths": "{count, plural, =1{1 month planning horizon} other{{count} months planning horizon}}",
+  "@planningHorizonMonths": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "weeksPlanned": "{count} weeks planned",
+  "@weeksPlanned": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "tasksChecked": "{percent}% tasks checked",
+  "@tasksChecked": {
+    "placeholders": {
+      "percent": {
+        "type": "num"
+      }
+    }
+  },
+  "phasesLabel": "PHASES",
+  "timelineStages": "timeline stages",
+  "milestonesLabel": "MILESTONES",
+  "targetOutcomes": "target outcomes",
+  "tasksLabel": "TASKS",
+  "plannedActions": "planned actions",
+  "yourTimeline": "Your timeline",
+  "phaseCount": "{count} phases",
+  "@phaseCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "phaseNumber": "PHASE {number}",
+  "@phaseNumber": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "weekRange": "WEEK {start}–{end}",
+  "@weekRange": {
+    "placeholders": {
+      "start": {
+        "type": "num"
+      },
+      "end": {
+        "type": "num"
+      }
+    }
+  },
+  "phaseTitleLabel": "Phase title",
+  "phaseFallbackTitle": "Phase {number}",
+  "@phaseFallbackTitle": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "objectiveLabel": "Objective",
+  "taskCountSummary": "{tasks} tasks · {completed} completed",
+  "@taskCountSummary": {
+    "placeholders": {
+      "tasks": {
+        "type": "num"
+      },
+      "completed": {
+        "type": "num"
+      }
+    }
+  },
+  "durationWeeks": "{count} weeks",
+  "@durationWeeks": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "startWeekLabel": "Start week",
+  "endWeekLabel": "End week",
+  "durationWeeksLabel": "Duration (weeks)",
+  "expectedOutcomes": "Expected outcomes",
+  "outcomeNumber": "Outcome {number}",
+  "@outcomeNumber": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "milestones": "Milestones",
+  "milestoneLabel": "Milestone",
+  "milestoneNumber": "Milestone {number}",
+  "@milestoneNumber": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "targetWeekLabel": "Target week",
+  "tasksAndDeliverables": "Tasks and deliverables",
+  "reviewCheckpoint": "REVIEW CHECKPOINT",
+  "reviewCheckpointLabel": "Review checkpoint",
+  "careerAlignment": "Career alignment",
+  "selectedCareer": "Selected career",
+  "careerAlignmentDescription": "How this phase supports the career",
+  "taskTitleLabel": "Task title",
+  "taskNumber": "Task {number}",
+  "@taskNumber": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "descriptionLabel": "Description",
+  "estimatedHoursLabel": "Estimated hours",
+  "dueWeekLabel": "Due week",
+  "hoursUnit": "{count} HOURS",
+  "@hoursUnit": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "dueWeekValue": "DUE WEEK {week}",
+  "@dueWeekValue": {
+    "placeholders": {
+      "week": {
+        "type": "num"
+      }
+    }
+  },
+  "deliverableLabel": "Deliverable",
+  "successCriteriaLabel": "Success criteria",
+  "weeklyRhythm": "Weekly rhythm",
+  "weeklyRhythmSubtitle": "A sustainable way to distribute your time",
+  "hoursPerWeekLabel": "Hours per week",
+  "timeBlockLabel": "Time block",
+  "blockNumber": "Block {number}",
+  "@blockNumber": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "activityLabel": "Activity",
+  "hoursLabel": "Hours",
+  "progressTracking": "Progress tracking",
+  "progressTrackingSubtitle": "How to review whether the roadmap is working",
+  "reviewFrequencyLabel": "Review frequency",
+  "metricNumber": "Metric {number}",
+  "@metricNumber": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "nextActionLabel": "Next action",
+  "risksAndAdjustments": "Risks and adjustments",
+  "risksAndAdjustmentsSubtitle": "Plan for setbacks without losing momentum",
+  "riskLabel": "Risk",
+  "mitigationLabel": "Mitigation",
+  "whenToAdjustLabel": "When to adjust",
+  "assumptions": "Assumptions",
+  "assumptionsSubtitle": "Details used where your profile did not specify a preference",
+  "assumptionNumber": "Assumption {number}",
+  "@assumptionNumber": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "editRoadmapHint": "Edit the text and timeline fields above, then save your changes. Numeric timeline values must remain valid numbers.",
+  "viewRoadmapHint": "You can edit phase details, milestones, tasks and schedule before entering Evolyn. Save your changes to keep the roadmap in sync.",
+  "cancel": "Cancel",
+  "saveChanges": "Save changes",
+  "saveProgress": "Save progress",
+  "signInToRefresh": "Sign in to refresh your roadmap.",
+  "waitUntilSavingFinishes": "Please wait until saving finishes.",
+  "saveOrCancelBeforeRefreshing": "Save or cancel your edits before refreshing.",
+  "noSavedRoadmapFound": "No saved roadmap was found.",
+  "refreshRoadmapError": "Could not refresh your roadmap. Please try again.",
+  "signInBeforeSaving": "Please sign in before saving your roadmap.",
+  "noPhasesToSave": "There are no roadmap phases to save.",
+  "invalidPhaseWeekRange": "Phase {number} has an invalid week range. Please check its timeline fields.",
+  "@invalidPhaseWeekRange": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "invalidTaskSchedule": "A task in phase {number} has an invalid due week or estimate.",
+  "@invalidTaskSchedule": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "roadmapNotUpdated": "The saved roadmap could not be found or updated for this user.",
+  "saveRoadmapError": "Could not save your roadmap. Check your connection and database permissions, then retry.",
+  "roadmapProgressSaved": "Roadmap progress saved.",
+  "roadmapChangesSaved": "Roadmap changes saved.",
+
+
+
+
+
+
+  "mentorLoadingConversation": "Loading your conversation…",
+  "mentorSubtitle": "Your AI mentor",
+  "mentorOptions": "Mentor options",
+  "mentorCurrentFocus": "YOUR CURRENT FOCUS",
+  "mentorAskNextStep": "Ask AARYA to plan your next step",
+  "mentorRetry": "Retry",
+  "mentorConversationUnavailable": "Conversation unavailable.",
+  "mentorConversationHistory": "Conversation history",
+  "mentorNoConversations": "No conversations yet.",
+  "mentorStartNewConversation": "Start a new conversation",
+  "mentorNewConversation": "New conversation",
+  "mentorOpenPreviousChat": "Open a previous chat",
+  "mentorStartSeparateChat": "Start a separate chat",
+  "mentorRefreshMessages": "Refresh messages",
+  "mentorSyncChat": "Sync this chat with the server",
+  "mentorWelcomeTitle": "What are we working on today?",
+  "mentorWelcomeDescription": "Ask for help with a concept, a project, an interview, or your next roadmap task.",
+  "mentorConversationDivider": "YOUR AARYA CONVERSATION",
+  "mentorTyping": "Typing…",
+  "mentorSending": "Sending…",
+  "mentorThinking": "AARYA is thinking…",
+  "mentorSuggestedRoadmapTask": "Help with my next roadmap task",
+  "mentorSuggestedExplainConcept": "Explain a concept simply",
+  "mentorSuggestedStudySession": "Plan a study session",
+  "mentorSuggestedInterview": "Practice an interview",
+  "mentorInputHint": "Ask AARYA anything…",
+  "mentorWaitingForReply": "Waiting for AARYA…",
+  "mentorConnecting": "Connecting to your chat…",
+  "mentorSignInToChat": "Please sign in to chat with AARYA.",
+  "mentorConnectionFailed": "Could not connect to your conversations. Check your connection and retry.",
+  "mentorOfflineConversation": "Offline mode: showing your locally saved conversation.",
+  "mentorHistoryLoadFailed": "Could not load chat history. Check your connection.",
+  "mentorOfflineMessages": "Offline mode: showing locally saved messages.",
+  "mentorMessageTooLong": "Please keep each message under 4,000 characters.",
+  "mentorNoActiveConversation": "No active conversation is available. Sign in and retry.",
+  "mentorMissingSavedReply": "AARYA finished, but the saved reply was missing.",
+  "mentorResponseFailed": "AARYA could not finish the response. Please try again.",
+  "mentorApiKeyUnavailable": "The Supabase API key is unavailable. Check Supabase initialization.",
+  "mentorInvalidResponse": "AARYA returned an invalid response.",
+  "mentorReplyMissing": "AARYA reply was missing.",
+  "mentorStreamEndedEarly": "The response stream ended before AARYA saved its reply.",
+  "mentorGenericReplyFailed": "AARYA could not reply. Check your connection and try again.",
+  "mentorRequestFailed": "AARYA request failed (HTTP {statusCode}). Please try again.",
+  "@mentorRequestFailed": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "mentorCreateConversationFailed": "Could not start a new conversation. Please retry.",
+  "mentorHistoryFailed": "Could not load conversation history. Please retry.",
+  "mentorSavedConversation": "Saved conversation",
+  "mentorNewConversationTitle": "New conversation",
+  "mentorDefaultConversationTitle": "Conversation",
+  "mentorAskNextTaskPrompt": "Help me work through my next roadmap task: \"{taskTitle}\". Break it into small practical steps and ask me one question if you need more context.",
+  "@mentorAskNextTaskPrompt": {
+    "placeholders": {
+      "taskTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "mentorChooseNextStepPrompt": "Help me choose a practical next learning step based on my career goals.",
+  "mentorSuggestedTaskPrompt": "Help me work through my next roadmap task: \"{taskTitle}\". Give me clear, practical steps.",
+  "@mentorSuggestedTaskPrompt": {
+    "placeholders": {
+      "taskTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "mentorExplainConceptPrompt": "Help me understand a technical concept using a simple example. Ask which concept if needed.",
+  "mentorStudySessionPrompt": "Help me plan a focused study session that fits my next roadmap task.",
+  "mentorInterviewPrompt": "Help me practise a technical interview. Ask one question at a time and give constructive feedback.",
+
+
+
+
+
+  "learnSignInPrompt": "Sign in to view your learning path.",
+  "learnLoadingErrorTitle": "Could not load your learning path",
+  "learnLoadingErrorMessage": "Check your connection and try again. If you have a cached roadmap, try refreshing again when online.",
+  "learnRetry": "Retry",
+  "learnPreferencesSyncWarning": "Learning preferences could not be synced. Run the supplied SQL setup for public.learn, then retry. Your roadmap tasks are still shown.",
+  "learnHeaderEyebrow": "YOUR LEARNING SPACE",
+  "learnHeaderTitle": "Learn and build.",
+  "learnHeaderSubtitle": "Practical next steps from {roadmapTitle}.",
+  "@learnHeaderSubtitle": {
+    "placeholders": {
+      "roadmapTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "learnTasksDone": "Tasks done",
+  "learnTimeRemaining": "Time remaining*",
+  "learnSavedTasks": "Saved tasks",
+  "learnProgressFootnote": "{inProgress} currently in progress · *Based on estimated task hours, not tracked study time.",
+  "@learnProgressFootnote": {
+    "placeholders": {
+      "inProgress": {
+        "type": "int"
+      }
+    }
+  },
+  "learnContinueCurrentSession": "CONTINUE YOUR CURRENT SESSION",
+  "learnContinueCurrentTask": "CONTINUE YOUR TASK",
+  "learnNextRoadmapTask": "YOUR NEXT ROADMAP TASK",
+  "learnEstimatedHours": "{duration} estimated",
+  "@learnEstimatedHours": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "learnResumeSession": "Resume session",
+  "learnStartNextSession": "Start next session",
+  "learnOpenTaskDetails": "Open task details",
+  "learnAllTasksCompleteTitle": "You completed every roadmap task!",
+  "learnAllTasksCompleteMessage": "Review your roadmap or add a new career direction when you are ready.",
+  "learnSearchHint": "Search tasks, skills, phases, deliverables",
+  "learnFilterAll": "All",
+  "learnFilterToDo": "To do",
+  "learnFilterInProgress": "In progress",
+  "learnFilterCompleted": "Completed",
+  "learnFilterSaved": "Saved",
+  "learnTaskListTitle": "Your learning tasks",
+  "learnTaskListSubtitle": "Real actions from your saved roadmap.",
+  "learnVisibleTaskCount": "{visibleCount} of {totalCount}",
+  "@learnVisibleTaskCount": {
+    "placeholders": {
+      "visibleCount": {
+        "type": "int"
+      },
+      "totalCount": {
+        "type": "int"
+      }
+    }
+  },
+  "learnSaveTask": "Save task",
+  "learnRemoveSavedTask": "Remove saved task",
+  "learnDueWeek": "Due week {week}",
+  "@learnDueWeek": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "learnResourceAvailable": "Resource available",
+  "learnStatusToDo": "To do",
+  "learnStatusInProgress": "In progress",
+  "learnStatusCompleted": "Completed",
+  "learnNoRoadmapTitle": "Your learning path starts with a roadmap",
+  "learnNoRoadmapMessage": "Generate a roadmap from Career Recommendations. Its real tasks will appear here, and you can track them as you work.",
+  "learnNoTasksTitle": "No learning tasks yet",
+  "learnNoTasksMessage": "Your saved roadmap does not contain any tasks. Open the Roadmap tab to review it or generate an updated roadmap.",
+  "learnNoMatchingTasksTitle": "No matching tasks",
+  "learnNoMatchingTasksMessage": "Try a different search term or change the status/category filters.",
+  "learnSyncNoticeRetry": "Retry sync",
+  "learnAaryaTip": "AARYA tip: use the deliverable and success criteria in each task to decide when the skill is ready to move into practice.",
+  "learnDurationDialogTitle": "How long is this work session?",
+  "learnDurationEstimatedTotal": "Estimated total: {estimated}. Already tracked: {tracked}. Choose a session; the final session is shortened to the remaining estimate.",
+  "@learnDurationEstimatedTotal": {
+    "placeholders": {
+      "estimated": {
+        "type": "String"
+      },
+      "tracked": {
+        "type": "String"
+      }
+    }
+  },
+  "learnDurationNoEstimate": "This task has no time estimate. Choose a session length; you can mark the task complete when you finish the work.",
+  "learnCancel": "Cancel",
+  "learnStartDuration": "Start {duration}",
+  "@learnStartDuration": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "learnTaskDetailsWhatToDo": "What to do",
+  "learnTaskDetailsDeliverable": "Deliverable",
+  "learnTaskDetailsSuccessCriteria": "Success criteria",
+  "learnPriority": "{priority} priority",
+  "@learnPriority": {
+    "placeholders": {
+      "priority": {
+        "type": "String"
+      }
+    }
+  },
+  "learnLearningResource": "Learning resource",
+  "learnOpenLearningResource": "Open learning resource",
+  "learnAnotherTaskInProgress": "\"{taskTitle}\" is already in progress. Complete it before starting another task.",
+  "@learnAnotherTaskInProgress": {
+    "placeholders": {
+      "taskTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "learnFinishCurrentSessionFirst": "Finish current session first",
+  "learnContinueCurrentSessionButton": "Continue current session",
+  "learnStartTask": "Start task",
+  "learnReopenTask": "Reopen task",
+  "learnFinishSessionEarly": "Finish session early",
+  "learnMarkTaskCompleted": "Mark task as completed",
+  "learnInvalidResourceUrl": "This learning resource has an invalid URL.",
+  "learnCouldNotOpenResource": "Could not open this learning resource.",
+  "learnTimerPermissionMessage": "Allow Evolyn to display over other apps to show the floating timer.",
+  "learnOverlayPrepareError": "Could not prepare the floating timer. Check Display over other apps permission.",
+  "learnNotificationTimerTitle": "Evolyn • Task in progress",
+  "learnNotificationTimerChannel": "Active task timer",
+  "learnNotificationTimerChannelDescription": "Shows the countdown for your active learning task",
+  "learnNotificationFinishedTitle": "Task time is up!",
+  "learnNotificationFinishedBody": "\"{taskTitle}\" reached the end of its {duration} session.",
+  "@learnNotificationFinishedBody": {
+    "placeholders": {
+      "taskTitle": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "learnNotificationFinishedChannel": "Task timer finished",
+  "learnNotificationFinishedChannelDescription": "Alerts when a learning task reaches its time limit",
+  "learnNotificationPermissionError": "Could not show the task timer. Check notification permissions.",
+  "learnSessionTimeUp": "Session time is up",
+  "learnSessionTimeLeft": "Session time left {countdown}",
+  "@learnSessionTimeLeft": {
+    "placeholders": {
+      "countdown": {
+        "type": "String"
+      }
+    }
+  },
+  "learnTrackedEstimatedLeft": "{tracked} tracked · {remaining} estimated time left",
+  "@learnTrackedEstimatedLeft": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      },
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "learnTrackedStartAnother": "{tracked} tracked · start another session",
+  "@learnTrackedStartAnother": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      }
+    }
+  },
+  "learnReadyToStartSession": "Ready to start a session",
+  "learnTotalTime": "Total time {duration}",
+  "@learnTotalTime": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "learnTrackedSoFar": "{duration} tracked so far",
+  "@learnTrackedSoFar": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "learnTaskRemovedFromSaved": "Task removed from saved items.",
+  "learnTaskSavedForLater": "Task saved for later.",
+  "learnBookmarkSaveError": "Could not save this task. Check your connection and learn table permissions.",
+  "learnRoadmapTimeSavedLearnSyncError": "Roadmap time was saved, but learning preferences could not sync. Check the learn table setup.",
+  "learnTaskCompletedEstimateReached": "Task completed. Its estimated total time has been reached.",
+  "learnSessionSavedTrackedOfEstimate": "Session saved. {tracked} tracked of {estimated}. Start another session to continue.",
+  "@learnSessionSavedTrackedOfEstimate": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      },
+      "estimated": {
+        "type": "String"
+      }
+    }
+  },
+  "learnSessionSavedNoEstimate": "Session saved ({tracked} tracked). Open the task to start another session or mark it complete.",
+  "@learnSessionSavedNoEstimate": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      }
+    }
+  },
+  "learnTaskMarkedCompleted": "Task marked as completed.",
+  "learnTaskReopened": "Task reopened. Time tracking starts a new cycle.",
+  "learnSessionStarted": "Session started for {duration}.",
+  "@learnSessionStarted": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "learnSessionResumed": "Session resumed.",
+  "learnTaskSessionSaveError": "Could not save the task session. Please retry.",
+  "learnAnotherTaskStarting": "Another task is starting. Please wait.",
+  "learnFinishTaskBeforeStartingAnother": "Finish \"{taskTitle}\" before starting another task.",
+  "@learnFinishTaskBeforeStartingAnother": {
+    "placeholders": {
+      "taskTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "learnTaskPhaseFallback": "Phase {phaseNumber}",
+  "@learnTaskPhaseFallback": {
+    "placeholders": {
+      "phaseNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "learnTaskFallback": "Task {taskNumber}",
+  "@learnTaskFallback": {
+    "placeholders": {
+      "taskNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "learnGeneralCategory": "General",
+  "learnInvalidRoadmapId": "The saved roadmap ID is missing.",
+  "learnRoadmapPhaseChanged": "The roadmap phase changed. Refresh and try again.",
+  "learnRoadmapTaskChanged": "The roadmap task changed. Refresh and try again.",
+  "learnDurationMustBePositive": "Session duration must be positive.",
+  "learnRoadmapUpdateFailed": "The roadmap was not found or could not be updated for this user.",
+  "learnUnsupportedTaskAction": "Unsupported task action",
+  "learnTimerOverlayFailed": "Floating timer failed",
+  "learnOverlayDataDeliveryFailed": "Overlay data delivery failed",
+  "learnCloseTimerFailed": "Close timer failed",
+  "learnCouldNotShowOverlay": "Could not show floating timer",
+  "learnNotificationInitializationFailed": "Notification initialization failed",
+  "learnCouldNotScheduleTimer": "Could not schedule task timer",
+  "learnCouldNotCancelNotifications": "Could not cancel timer notifications",
+  "learnStartSoundFailed": "Start sound failed",
+  "learnFinishedSoundFailed": "Finished sound failed",
+  "learnExpiredTaskCheckFailed": "Expired task check failed",
+  "learnResourceLaunchFailed": "Resource launch failed",
+  "learnBookmarkSaveFailed": "Bookmark save failed",
+  "learnLearnStateMirrorFailed": "Learn state mirror failed",
+  "learnTaskStatusSaveFailed": "Task status save failed",
+  "learnRoadmapRefreshFailed": "Roadmap refresh failed",
+  "learnLearnRefreshFailed": "Learn refresh failed",
+
+
+
+
+
+
+  "progressEyebrow": "YOUR GROWTH, IN VIEW",
+  "progressTitle": "Your progress",
+  "signInPrompt": "Sign in to view your progress.",
+  "loadProgressError": "Could not load progress",
+  "connectionRetry": "Check your connection and try again.",
+  "retry": "Retry",
+  "comingSoon": "Coming soon!",
+  "noRoadmapTitle": "No saved roadmap yet",
+  "noRoadmapDescription": "Generate a roadmap from Career Recommendations. Its phases, tasks, and milestones will appear here after they are saved.",
+  "currentRoadmap": "CURRENT ROADMAP",
+  "openRoadmap": "Open roadmap",
+  "phasesCount": "{count} phases",
+  "@phasesCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "tasksCount": "{count} tasks",
+  "@tasksCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "milestonesCount": "{count} milestones",
+  "@milestonesCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "tasksCompleted": "{completed} of {total} tasks completed",
+  "@tasksCompleted": {
+    "placeholders": {
+      "completed": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "timeSpentTitle": "Time spent on each task",
+  "timeSpentSubtitle": "Your tracked time for every task in the saved roadmap.",
+  "roadmapMilestonesTitle": "Roadmap milestones",
+  "roadmapMilestonesSubtitle": "Milestones saved with your current roadmap.",
+  "completedTasksTitle": "Completed tasks",
+  "completedTasksSubtitle": "Only tasks with a saved completion state appear here.",
+  "totalTrackedTime": "TOTAL TRACKED TIME",
+  "notRecordedYet": "Not recorded yet",
+  "trackedCount": "{tracked}/{total} tracked",
+  "@trackedCount": {
+    "placeholders": {
+      "tracked": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "sessionHistory": "SESSION HISTORY",
+  "savedSessionTimeline": "SAVED SESSION TIMELINE ({count})",
+  "currentSessionTimeline": "CURRENT SESSION TIMELINE",
+  "started": "Started",
+  "targetEnd": "Target end",
+  "ended": "Ended",
+  "inProgress": "IN PROGRESS",
+  "completed": "COMPLETED",
+  "planned": "PLANNED",
+  "taskTotal": "TASK TOTAL",
+  "sessionDuration": "SESSION DURATION",
+  "dateLabel": "DATE",
+  "sessionLabel": "Session {number}",
+  "@sessionLabel": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "liveDuration": "LIVE · {duration}",
+  "@liveDuration": {
+    "placeholders": {
+      "duration": {"type": "String"}
+    }
+  },
+  "noTime": "No time",
+  "noTasksAvailable": "No tasks available",
+  "noTasksSaved": "No tasks are saved in this roadmap yet.",
+  "noMilestonesSaved": "No milestones saved",
+  "noMilestonesDescription": "Milestones will appear once they are included in your roadmap.",
+  "noCompletedTasks": "No completed tasks recorded yet",
+  "completionNotTracked": "Task completion is not tracked yet",
+  "completionSavedDescription": "Completed work will appear here after its completion state is saved.",
+  "completionMissingDescription": "Your saved roadmap contains planned tasks, but the current data does not include completion records. This screen will show real wins when task completion is persisted.",
+  "aaryaNote": "A note from AARYA",
+  "plannedEffort": "Planned effort",
+  "estimatedTaskHours": "Estimated task hours",
+  "milestonesLabel": "Milestones",
+  "inSavedRoadmap": "In saved roadmap",
+  "completionTracking": "Completion tracking",
+  "savedCompletionStates": "Saved completion states",
+  "taskCompletionUnavailable": "Task completion is not yet recorded for every task.",
+  "noTasksInRoadmap": "No tasks are saved in this roadmap yet.",
+  "startTimeNotSaved": "Start date/time not saved",
+  "endTimeNotSaved": "End date/time not saved",
+  "targetEndNotSaved": "Target end not saved",
+  "inProgressValue": "In progress",
+  "taskTimeFallback": "A cumulative task total is saved, but individual session dates and start/end times are not available for older sessions.",
+  "sessionHistoryEmpty": "No session history recorded yet. New completed sessions will appear here with their dates and timeline after session logging is enabled in LearnScreen.",
+  "sessionTotalExplanation": "Session totals use saved session durations where available. Estimated hours are planned effort, not actual study time.",
+  "activeElapsedExplanation": "Elapsed time is included in TASK TOTAL above.",
+  "roadmapTaskFallback": "Roadmap task",
+  "roadmapMilestoneFallback": "Roadmap milestone",
+  "taskCompletedDetail": "Completed",
+  "taskCompletionNote": "Task progress is calculated from completion fields saved with your roadmap. Estimated hours describe planned effort, not time actually studied.",
+  "progressDataNote": "Progress information is based on saved roadmap data. No roadmap has been saved for this account yet.",
+  "trackingUnavailableNote": "This dashboard uses your saved roadmap. Study-time logs, learning streaks, and a dated activity history are not available in the current schema, so they are not displayed as invented statistics."
+
+    
+}

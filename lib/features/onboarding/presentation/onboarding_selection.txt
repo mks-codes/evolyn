@@ -1,0 +1,51 @@
+# What would you like help with right now?
+
+Choose the option that best matches your current situation. We’ll ask you relevant questions and use your answers to recommend suitable career paths and guide your next steps.
+
+## 1. Discover Career Options That Suit Me
+
+**Choose this if you don't know which career to pursue and want to discover the options that best match you.**
+
+We'll consider your education, interests, strengths, skills, personality, goals, financial needs, and circumstances to recommend careers that may suit you.
+
+*Example: I'm unsure whether I should pursue technology, business, government jobs, healthcare, or another field.*
+
+## 2. Explore a Specific Field or Career
+
+**Choose this if you already have a field or career in mind but want to explore the different roles and specializations within it.**
+
+We'll help you understand your options within that field and identify which roles best match your interests, abilities, qualifications, and goals.
+
+*Examples: AI and machine learning, software development, data science, cybersecurity, engineering, healthcare, finance, design, or research.*
+
+## 3. Prepare for a Specific Exam to Reach My Career Goal
+
+**Choose this if you're preparing for a particular competitive exam, entrance exam, or recruitment examination to enter a career.**
+
+We'll understand your target career, exam, eligibility, educational background, preparation stage, and progress to help you identify the most suitable path forward.
+
+*Examples: UPSC or MPSC for civil services, SSC or banking exams for government and banking roles, NEET for medical courses, JEE for engineering, or GATE for postgraduate study and relevant technical opportunities.*
+
+## 4. Find Backup Career Options While Preparing for an Exam
+
+**Choose this if you're preparing for an exam but also want alternative career options in case your plans change or you need another way forward.**
+
+We'll consider your qualifications, interests, preparation schedule, available time, financial needs, and existing skills to recommend realistic alternatives that may fit alongside or after your preparation.
+
+*Examples: I'm preparing for UPSC or MPSC but want employment alternatives, or I'm preparing for NEET but want to understand other career paths in healthcare and science.*
+
+## 5. Grow and Advance in My Current Career
+
+**Choose this if you already have a career or job and want to progress further in the same field.**
+
+We'll assess your current role, experience, skills, goals, and skill gaps to identify opportunities for promotion, specialization, higher earnings, or professional development.
+
+*Examples: I want to become a senior developer, move into AI engineering, get promoted, or earn more in my current field.*
+
+## 6. Change My Career or Move into a New Field
+
+**Choose this if you want to leave your current career, switch fields, or pursue a different professional direction.**
+
+We'll identify your transferable skills, interests, qualifications, constraints, and priorities to recommend realistic career transitions and the skills or training you may need.
+
+*Examples: I'm working in sales but want to move into data analytics, or I'm in a non-technical role and want to enter the technology industry.*

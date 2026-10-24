@@ -1,0 +1,881 @@
+
+{
+  "@@locale": "mr",
+  "appName": "Evolyn",
+  "profileAccountCenter": "खाते केंद्र",
+  "profileSetings": "प्रोफाइल आणि सेटिंग्ज",
+  "profileYourProfile": "तुमची प्रोफाइल",
+  "profileSignInToViewFocus": "तुमचे ध्येय पाहण्यासाठी साइन इन करा",
+  "profileLoadingFocus": "तुमचे ध्येय लोड होत आहे…",
+  "profileUnableToLoadFocus": "सध्याचे ध्येय लोड करता आले नाही",
+  "profileNoSavedRoadmap": "अद्याप कोणताही रोडमॅप सेव्ह केलेला नाही",
+  "profileRoadmapSaved": "रोडमॅप सेव्ह केला आहे",
+  "profilePreferences": "प्राधान्ये",
+  "profilePreferencesSubtitle": "तुमच्या खात्यासाठी या डिव्हाइसवर सेव्ह केले आहे.",
+  "profileLanguage": "भाषा",
+  "profileLanguageSubtitle": "तुमची पसंतीची भाषा निवडा.",
+  "profilePrivacySecurity": "गोपनीयता आणि सुरक्षा",
+  "profilePrivacySecuritySubtitle": "तुमचे खाते, तुमची निवड.",
+  "profileAccountCenterSubtitle": "तुमची लॉगिन माहिती आणि खाते डेटा व्यवस्थापित करा.",
+  "profileAccountCenterTileSubtitle": "पासवर्ड, मोबाइल नंबर आणि खाते हटवणे",
+  "profileYourSpace": "तुमची जागा",
+  "profileEmailUnavailable": "ईमेल उपलब्ध नाही",
+  "profileLearningJourney": "तुमचा शिकण्याचा प्रवास",
+  "profileEditNameTooltip": "प्रोफाइलचे नाव बदला",
+  "profileCurrentFocus": "सध्याचे ध्येय",
+  "profileLearningReminders": "शिकण्याची स्मरणपत्रे",
+  "profileLearningRemindersSubtitle": "तुमच्या रोजच्या शिकण्याच्या ध्येयासाठी हलके स्मरणपत्र",
+  "profileWeeklyRecap": "साप्ताहिक प्रगतीचा आढावा",
+  "profileWeeklyRecapSubtitle": "पूर्ण केलेल्या कामांचा सारांश",
+  "profileProductUpdates": "उत्पादनातील अपडेट्स",
+  "profileProductUpdatesSubtitle": "Evolyn च्या नवीन सुविधांची माहिती",
+  "profileDailyGoal": "दररोजचे शिकण्याचे ध्येय",
+  "profileDailyGoalSubtitle": "दररोज {goal}",
+  "@profileDailyGoalSubtitle": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
+  "profilePrivacyPolicy": "गोपनीयता धोरण",
+  "profilePrivacyPolicySubtitle": "तुमचा खाते डेटा आणि शिकण्याची माहिती कशी हाताळली जाते",
+  "profileAccountSecurity": "खाते सुरक्षा",
+  "profileAccountSecuritySubtitle": "तुमची साइन-इन माहिती गोपनीय राहते",
+  "profileAccountSecurityMessage": "तुमचे खाते Supabase Authentication द्वारे व्यवस्थापित केले जाते. तुमचा पासवर्ड किंवा पडताळणी कोड कोणाशीही शेअर करू नका.",
+  "profileSigningOut": "साइन आउट होत आहे…",
+  "profileFooter": "EVOLYN • तुमच्या गतीने प्रगती करा",
+  "profilePasswordUpdated": "पासवर्ड यशस्वीरित्या अपडेट केला.",
+  "profileCouldNotUpdatePassword": "पासवर्ड अपडेट करता आला नाही.",
+  "profilePhoneUpdated": "मोबाइल नंबरची पडताळणी करून अपडेट केला.",
+  "profileCouldNotUpdatePhone": "मोबाइल नंबर अपडेट करता आला नाही.",
+  "profileDeletePermanentlyTitle": "खाते कायमचे हटवायचे आहे का?",
+  "profileDeleteWarning": "ही कृती पूर्ववत करता येणार नाही. तुमचे खाते, सेव्ह केलेले रोडमॅप, शिकण्याची प्रगती, प्रोफाइल माहिती आणि इतर संबंधित डेटा आमच्या डेटा हटवण्याच्या धोरणानुसार कायमचा हटवला जाईल. कायदेशीररीत्या जतन करणे आवश्यक असलेला डेटा गोपनीयता धोरणानुसार हाताळला जाईल.",
+  "profileKeepAccount": "माझे खाते ठेवा",
+  "profileDeletePermanently": "कायमचे हटवा",
+  "profileDeleteRequestFailed": "खाते हटवण्याची विनंती अयशस्वी झाली.",
+  "profileDeletionCompleted": "तुमचे खाते हटवण्यात आले आहे.",
+  "profileDeletionFailed": "खाते हटवता आले नाही. कृपया पुन्हा प्रयत्न करा.",
+  "profileSavePreferenceFailed": "ही पसंती डिव्हाइसवर सेव्ह करता आली नाही. कृपया पुन्हा प्रयत्न करा.",
+  "profileEditSignInAgain": "प्रोफाइल संपादित करण्यासाठी पुन्हा साइन इन करा.",
+  "profileNameUpdated": "प्रोफाइलचे नाव अपडेट केले.",
+  "profileCouldNotUpdateName": "प्रोफाइल अपडेट करता आली नाही. कृपया पुन्हा प्रयत्न करा.",
+  "profileChooseLanguage": "भाषा निवडा",
+  "profileChooseAppLanguage": "अॅपची पसंतीची भाषा निवडा.",
+  "profileLanguageUpdated": "अॅपची भाषा अपडेट केली.",
+  "profileChooseDailyGoal": "तुम्ही नियमितपणे पूर्ण करू शकाल असे ध्येय निवडा.",
+  "profileDailyGoalSaved": "दररोजचे ध्येय या डिव्हाइसवर सेव्ह केले.",
+  "profilePrivacyDescription": "अॅपची वैशिष्ट्ये उपलब्ध करून देण्यासाठी Evolyn खाते तपशील, शिकण्याची प्रगती, सेव्ह केलेले रोडमॅप आणि AI मेंटरशी झालेली संभाषणे प्रक्रिया करू शकते.",
+  "profilePrivacyReviewNotice": "अॅप प्रकाशित करण्यापूर्वी हा विभाग तपासलेल्या गोपनीयता धोरणाशी जोडा आणि डेटा किती काळ ठेवला जातो, त्याला प्रवेश कसा मिळतो आणि तो हटवण्याचे पर्याय स्पष्ट करा.",
+  "profileDone": "पूर्ण झाले",
+  "profileGotIt": "समजले",
+  "profileLogoutTitle": "Evolyn मधून लॉग आउट करायचे?",
+  "profileLogoutMessage": "शिकण्याचा प्रवास सुरू ठेवण्यासाठी तुम्हाला पुन्हा साइन इन करावे लागेल.",
+  "profileCancel": "रद्द करा",
+  "profileLogout": "लॉग आउट",
+  "profileLogoutFailed": "लॉग आउट करता आले नाही. कृपया पुन्हा प्रयत्न करा.",
+  "profileEditProfile": "प्रोफाइल संपादित करा",
+  "profileDisplayName": "दिसणारे नाव",
+  "profileSave": "सेव्ह करा",
+  "profileAccountSecurityHeading": "खाते सुरक्षा",
+  "profileChangePassword": "पासवर्ड बदला",
+  "profileChangePasswordSubtitle": "खात्यासाठी नवीन पासवर्ड सेट करा",
+  "profileMobileNumber": "मोबाइल नंबर",
+  "profileMobileNumberSubtitle": "पडताळलेला मोबाइल नंबर जोडा किंवा बदला",
+  "profileAccountOwnershipHeading": "खात्याची मालकी",
+  "profileDeleteAccount": "खाते हटवा",
+  "profileDeleteAccountSubtitle": "तुमचे खाते आणि संबंधित डेटा कायमचा हटवा",
+  "profileDeletionCannotUndo": "खाते हटवण्याची कृती पूर्ववत करता येणार नाही. पुष्टी करण्यापूर्वी हटवण्याची सूचना आणि गोपनीयता धोरण वाचा.",
+  "profilePasswordMinLength": "पासवर्डमध्ये किमान 8 अक्षरे असणे आवश्यक आहे.",
+  "profilePasswordsDoNotMatch": "दोन्ही पासवर्ड जुळत नाहीत.",
+  "profileNewPassword": "नवीन पासवर्ड",
+  "profileConfirmNewPassword": "नवीन पासवर्डची पुष्टी करा",
+  "profileUpdatePassword": "पासवर्ड अपडेट करा",
+  "profilePhoneNumberLabel": "फोन नंबर",
+  "profilePhoneNumberHint": "+919876543210",
+  "profilePhoneCountryCodeHelp": "देशाचा कोड समाविष्ट करा.",
+  "profileInvalidPhone": "वैध आंतरराष्ट्रीय फोन नंबर टाका.",
+  "profileSendVerificationCode": "पडताळणी कोड पाठवा",
+  "profileVerifyMobile": "मोबाइल नंबरची पडताळणी करा",
+  "profileOtpMessage": "{phone} या नंबरवर पाठवलेला SMS पडताळणी कोड टाका.",
+  "@profileOtpMessage": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "profileVerificationCode": "पडताळणी कोड",
+  "profileInvalidOtp": "6 अंकी पडताळणी कोड टाका.",
+  "profileVerify": "पडताळणी करा",
+  "profileWhyLeaving": "तुम्ही खाते का सोडत आहात?",
+  "profileFeedbackOptional": "तुमचा अभिप्राय ऐच्छिक आहे आणि Evolyn सुधारण्यास मदत करतो.",
+  "profileDeleteReasonNoNeed": "मला आता या खात्याची गरज नाही",
+  "profileDeleteReasonUnsatisfied": "मी अॅपबद्दल समाधानी नाही",
+  "profileDeleteReasonLearningNeeds": "अॅप माझ्या शिकण्याच्या गरजा पूर्ण करत नाही",
+  "profileDeleteReasonPrivacy": "मला गोपनीयता किंवा डेटाबद्दल चिंता आहे",
+  "profileDeleteReasonTechnical": "मला तांत्रिक अडचणी येत आहेत",
+  "profileDeleteReasonAnotherAccount": "मी दुसरे खाते तयार केले आहे",
+  "profileDeleteReasonOther": "इतर",
+  "profileAnythingElse": "आणखी काही? (ऐच्छिक)",
+  "profileFeedbackHint": "तुमचा अभिप्राय सांगा...",
+  "profileSelectReason": "पुढे जाण्यासाठी कृपया एक कारण निवडा.",
+  "profileContinue": "पुढे जा",
+
+
+
+  "dashboardLoadErrorTitle": "तुमचा डॅशबोर्ड लोड होऊ शकला नाही",
+  "dashboardLoadErrorMessage": "तुमचे इंटरनेट कनेक्शन तपासा आणि पुन्हा प्रयत्न करा.",
+  "retry": "पुन्हा प्रयत्न करा",
+  "goodMorning": "शुभ सकाळ",
+  "goodAfternoon": "नमस्कार",
+  "goodEvening": "शुभ संध्याकाळ",
+  "fallbackDisplayName": "मित्रा",
+  "roadmapFocus": "तुमच्या रोडमॅपचे उद्दिष्ट",
+  "noSavedRoadmap": "अजून कोणताही रोडमॅप सेव्ह केलेला नाही",
+  "chooseCareersDescription": "करिअर शिफारसींमध्ये करिअर निवडा आणि रोडमॅप तयार करा. तुमचा सेव्ह केलेला प्लॅन येथे दिसेल.",
+  "openRoadmap": "रोडमॅप उघडा",
+  "nextActions": "पुढील कामे",
+  "plannedTasks": "{count, plural, =0{कोणतीही नियोजित कामे नाहीत} =1{1 नियोजित काम} other{{count} नियोजित कामे}}",
+  "@plannedTasks": {
+    "description": "नियोजित कामांची संख्या",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "nextStepsTitle": "तुमची पुढील पावले येथे दिसतील",
+  "nextStepsSubtitle": "तुमच्या निवडलेल्या करिअरनुसार कामे पाहण्यासाठी रोडमॅप तयार करून सेव्ह करा.",
+  "noTasksTitle": "या रोडमॅपमध्ये कोणतीही कामे आढळली नाहीत",
+  "noTasksSubtitle": "रोडमॅप उघडा आणि त्याच्या टप्प्यांमध्ये कामे आहेत का ते तपासा.",
+  "allTasksCompletedTitle": "सर्व कामे पूर्ण झाली!",
+  "allTasksCompletedSubtitle": "तुमच्या रोडमॅपमधील सर्व कामे तुम्ही पूर्ण केली आहेत. नवीन कामे जोडल्यावर ती येथे दिसतील.",
+  "fallbackTaskTitle": "रोडमॅपमधील काम",
+  "fallbackTaskCategory": "काम",
+  "fallbackPhaseTitle": "रोडमॅप",
+  "fallbackRoadmapTitle": "तुमचा करिअर रोडमॅप",
+  "oneHour": "1 तास",
+  "hours": "{count, plural, =1{1 तास} other{{count} तास}}",
+  "@hours": {
+    "description": "अंदाजे वेळ, तासांमध्ये",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "weekNumber": "आठवडा {week}",
+  "@weekNumber": {
+    "placeholders": {
+      "week": {
+        "type": "num"
+      }
+    }
+  },
+  "liveInProgress": "लाइव्ह · सुरू आहे",
+  "sessionFinishedResume": "सत्र संपले · पुन्हा सुरू करा",
+  "inProgress": "सुरू आहे",
+  "roadmapPhases": "रोडमॅपचे टप्पे",
+  "stagesInPlan": "तुमच्या प्लॅनमधील टप्पे",
+  "timeHorizon": "कालावधी",
+  "monthsShort": "{count} महिने",
+  "@monthsShort": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "plannedLearningPeriod": "शिकण्याचा नियोजित कालावधी",
+  "nextMilestone": "पुढील टप्पा",
+  "nextMilestoneWeek": "पुढील टप्पा · आठवडा {week}",
+  "@nextMilestoneWeek": {
+    "placeholders": {
+      "week": {
+        "type": "num"
+      }
+    }
+  },
+  "nextMilestoneFallback": "पुढील टप्पा",
+  "categoryProject": "प्रोजेक्ट",
+  "categoryReview": "पुनरावलोकन",
+  "categoryPractice": "सराव",
+  "categoryFoundation": "मूलभूत ज्ञान",
+  "categoryCareerSkill": "करिअर कौशल्य",
+
+
+
+  
+
+
+  "roadmapScreenTitle": "तुमचा रोडमॅप",
+  "editRoadmap": "रोडमॅप संपादित करा",
+  "personalizedRoadmap": "तुमच्यासाठी तयार केलेला रोडमॅप",
+  "roadmapTitleLabel": "रोडमॅपचे शीर्षक",
+  "overviewLabel": "आढावा",
+  "planningHorizonMonths": "{count, plural, =1{1 महिन्याचा नियोजन कालावधी} other{{count} महिन्यांचा नियोजन कालावधी}}",
+  "@planningHorizonMonths": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "weeksPlanned": "{count} आठवड्यांचे नियोजन",
+  "@weeksPlanned": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "tasksChecked": "{percent}% कामे पूर्ण",
+  "@tasksChecked": {
+    "placeholders": {
+      "percent": {
+        "type": "num"
+      }
+    }
+  },
+  "phasesLabel": "टप्पे",
+  "timelineStages": "नियोजनातील टप्पे",
+  "milestonesLabel": "महत्त्वाचे टप्पे",
+  "targetOutcomes": "अपेक्षित परिणाम",
+  "tasksLabel": "कामे",
+  "plannedActions": "नियोजित कृती",
+  "yourTimeline": "तुमची वेळापत्रक योजना",
+  "phaseCount": "{count} टप्पे",
+  "@phaseCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "phaseNumber": "टप्पा {number}",
+  "@phaseNumber": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "weekRange": "आठवडा {start}–{end}",
+  "@weekRange": {
+    "placeholders": {
+      "start": {
+        "type": "num"
+      },
+      "end": {
+        "type": "num"
+      }
+    }
+  },
+  "phaseTitleLabel": "टप्प्याचे शीर्षक",
+  "phaseFallbackTitle": "टप्पा {number}",
+  "@phaseFallbackTitle": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "objectiveLabel": "उद्दिष्ट",
+  "taskCountSummary": "{tasks} कामे · {completed} पूर्ण",
+  "@taskCountSummary": {
+    "placeholders": {
+      "tasks": {
+        "type": "num"
+      },
+      "completed": {
+        "type": "num"
+      }
+    }
+  },
+  "durationWeeks": "{count} आठवडे",
+  "@durationWeeks": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "startWeekLabel": "सुरुवातीचा आठवडा",
+  "endWeekLabel": "शेवटचा आठवडा",
+  "durationWeeksLabel": "कालावधी (आठवडे)",
+  "expectedOutcomes": "अपेक्षित परिणाम",
+  "outcomeNumber": "परिणाम {number}",
+  "@outcomeNumber": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "milestones": "महत्त्वाचे टप्पे",
+  "milestoneLabel": "महत्त्वाचा टप्पा",
+  "milestoneNumber": "टप्पा {number}",
+  "@milestoneNumber": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "targetWeekLabel": "लक्ष्यित आठवडा",
+  "tasksAndDeliverables": "कामे आणि अपेक्षित निष्पत्ती",
+  "reviewCheckpoint": "पुनरावलोकनाचा टप्पा",
+  "reviewCheckpointLabel": "पुनरावलोकनाचा टप्पा",
+  "careerAlignment": "करिअरशी सुसंगती",
+  "selectedCareer": "निवडलेले करिअर",
+  "careerAlignmentDescription": "हा टप्पा करिअरसाठी कसा उपयुक्त आहे",
+  "taskTitleLabel": "कामाचे शीर्षक",
+  "taskNumber": "काम {number}",
+  "@taskNumber": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "descriptionLabel": "वर्णन",
+  "estimatedHoursLabel": "अंदाजे तास",
+  "dueWeekLabel": "पूर्ण करण्याचा आठवडा",
+  "hoursUnit": "{count} तास",
+  "@hoursUnit": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "dueWeekValue": "अंतिम आठवडा {week}",
+  "@dueWeekValue": {
+    "placeholders": {
+      "week": {
+        "type": "num"
+      }
+    }
+  },
+  "deliverableLabel": "अपेक्षित निष्पत्ती",
+  "successCriteriaLabel": "यशाचे निकष",
+  "weeklyRhythm": "साप्ताहिक नियोजन",
+  "weeklyRhythmSubtitle": "वेळेचे संतुलित नियोजन करण्याची पद्धत",
+  "hoursPerWeekLabel": "दर आठवड्याला तास",
+  "timeBlockLabel": "वेळेचा भाग",
+  "blockNumber": "भाग {number}",
+  "@blockNumber": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "activityLabel": "कृती",
+  "hoursLabel": "तास",
+  "progressTracking": "प्रगतीचा आढावा",
+  "progressTrackingSubtitle": "रोडमॅप प्रभावी ठरत आहे का हे तपासण्याची पद्धत",
+  "reviewFrequencyLabel": "पुनरावलोकनाची वारंवारता",
+  "metricNumber": "मोजमाप {number}",
+  "@metricNumber": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "nextActionLabel": "पुढील कृती",
+  "risksAndAdjustments": "जोखीम आणि बदल",
+  "risksAndAdjustmentsSubtitle": "अडचणींसाठी तयार राहा आणि प्रगती सुरू ठेवा",
+  "riskLabel": "जोखीम",
+  "mitigationLabel": "जोखीम कमी करण्याचा उपाय",
+  "whenToAdjustLabel": "बदल कधी करावा",
+  "assumptions": "गृहीतके",
+  "assumptionsSubtitle": "तुमच्या प्रोफाइलमध्ये पसंती नमूद नसल्यास वापरलेले तपशील",
+  "assumptionNumber": "गृहीतक {number}",
+  "@assumptionNumber": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "editRoadmapHint": "वरील मजकूर आणि वेळापत्रकातील तपशील संपादित करून बदल सेव्ह करा. वेळापत्रकातील संख्यात्मक मूल्ये वैध संख्या असली पाहिजेत.",
+  "viewRoadmapHint": "Evolyn मध्ये पुढे जाण्यापूर्वी तुम्ही टप्पे, महत्त्वाचे टप्पे, कामे आणि वेळापत्रक संपादित करू शकता. रोडमॅप अद्ययावत ठेवण्यासाठी बदल सेव्ह करा.",
+  "cancel": "रद्द करा",
+  "saveChanges": "बदल सेव्ह करा",
+  "saveProgress": "प्रगती सेव्ह करा",
+  "signInToRefresh": "रोडमॅप रिफ्रेश करण्यासाठी साइन इन करा.",
+  "waitUntilSavingFinishes": "सेव्ह होईपर्यंत प्रतीक्षा करा.",
+  "saveOrCancelBeforeRefreshing": "रिफ्रेश करण्यापूर्वी बदल सेव्ह करा किंवा रद्द करा.",
+  "noSavedRoadmapFound": "सेव्ह केलेला रोडमॅप सापडला नाही.",
+  "refreshRoadmapError": "रोडमॅप रिफ्रेश करता आला नाही. कृपया पुन्हा प्रयत्न करा.",
+  "signInBeforeSaving": "रोडमॅप सेव्ह करण्यापूर्वी साइन इन करा.",
+  "noPhasesToSave": "सेव्ह करण्यासाठी रोडमॅपमध्ये कोणतेही टप्पे नाहीत.",
+  "invalidPhaseWeekRange": "टप्पा {number} ची आठवड्यांची मर्यादा चुकीची आहे. कृपया वेळापत्रकातील मूल्ये तपासा.",
+  "@invalidPhaseWeekRange": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "invalidTaskSchedule": "टप्पा {number} मधील एका कामाचा अंतिम आठवडा किंवा अंदाजित वेळ चुकीचा आहे.",
+  "@invalidTaskSchedule": {
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "roadmapNotUpdated": "या वापरकर्त्याचा सेव्ह केलेला रोडमॅप सापडला नाही किंवा तो अपडेट करता आला नाही.",
+  "saveRoadmapError": "रोडमॅप सेव्ह करता आला नाही. इंटरनेट कनेक्शन आणि डेटाबेस परवानग्या तपासून पुन्हा प्रयत्न करा.",
+  "roadmapProgressSaved": "रोडमॅपची प्रगती सेव्ह झाली.",
+  "roadmapChangesSaved": "रोडमॅपमधील बदल सेव्ह झाले.",
+
+
+
+
+
+  "mentorLoadingConversation": "तुमचा संवाद लोड होत आहे…",
+  "mentorSubtitle": "तुमचे AI मार्गदर्शक",
+  "mentorOptions": "मार्गदर्शकाचे पर्याय",
+  "mentorCurrentFocus": "तुमचे सध्याचे लक्ष्य",
+  "mentorAskNextStep": "पुढील पाऊल ठरवण्यासाठी AARYA ला विचारा",
+  "mentorRetry": "पुन्हा प्रयत्न करा",
+  "mentorConversationUnavailable": "संवाद उपलब्ध नाही.",
+  "mentorConversationHistory": "संवादाचा इतिहास",
+  "mentorNoConversations": "अजून कोणतेही संवाद नाहीत.",
+  "mentorStartNewConversation": "नवीन संवाद सुरू करा",
+  "mentorNewConversation": "नवीन संवाद",
+  "mentorOpenPreviousChat": "मागील संवाद उघडा",
+  "mentorStartSeparateChat": "वेगळा संवाद सुरू करा",
+  "mentorRefreshMessages": "संदेश रिफ्रेश करा",
+  "mentorSyncChat": "हा संवाद सर्व्हरशी सिंक करा",
+  "mentorWelcomeTitle": "आज आपण कशावर काम करणार आहोत?",
+  "mentorWelcomeDescription": "एखादी संकल्पना, प्रकल्प, मुलाखत किंवा रोडमॅपवरील पुढील काम यासाठी मदत मागा.",
+  "mentorConversationDivider": "तुमचा AARYA संवाद",
+  "mentorTyping": "टाइप करत आहे…",
+  "mentorSending": "पाठवत आहे…",
+  "mentorThinking": "AARYA विचार करत आहे…",
+  "mentorSuggestedRoadmapTask": "माझ्या पुढील रोडमॅपच्या कामासाठी मदत करा",
+  "mentorSuggestedExplainConcept": "संकल्पना सोप्या पद्धतीने समजावून सांगा",
+  "mentorSuggestedStudySession": "अभ्यासाचे सत्र नियोजित करा",
+  "mentorSuggestedInterview": "मुलाखतीचा सराव करा",
+  "mentorInputHint": "AARYA ला काहीही विचारा…",
+  "mentorWaitingForReply": "AARYA च्या उत्तराची प्रतीक्षा आहे…",
+  "mentorConnecting": "तुमच्या संवादाशी कनेक्ट होत आहे…",
+  "mentorSignInToChat": "AARYA शी संवाद साधण्यासाठी साइन इन करा.",
+  "mentorConnectionFailed": "तुमच्या संवादाशी कनेक्ट होता आले नाही. इंटरनेट कनेक्शन तपासून पुन्हा प्रयत्न करा.",
+  "mentorOfflineConversation": "ऑफलाइन मोड: स्थानिकरीत्या सेव्ह केलेला संवाद दाखवत आहे.",
+  "mentorHistoryLoadFailed": "चॅटचा इतिहास लोड करता आला नाही. इंटरनेट कनेक्शन तपासा.",
+  "mentorOfflineMessages": "ऑफलाइन मोड: स्थानिकरीत्या सेव्ह केलेले संदेश दाखवत आहे.",
+  "mentorMessageTooLong": "कृपया प्रत्येक संदेश 4,000 अक्षरांपेक्षा लहान ठेवा.",
+  "mentorNoActiveConversation": "सध्या कोणताही सक्रिय संवाद उपलब्ध नाही. साइन इन करून पुन्हा प्रयत्न करा.",
+  "mentorMissingSavedReply": "AARYA ने उत्तर पूर्ण केले, पण सेव्ह केलेले उत्तर मिळाले नाही.",
+  "mentorResponseFailed": "AARYA उत्तर पूर्ण करू शकले नाही. कृपया पुन्हा प्रयत्न करा.",
+  "mentorApiKeyUnavailable": "Supabase API की उपलब्ध नाही. Supabase ची सुरुवातीची संरचना तपासा.",
+  "mentorInvalidResponse": "AARYA कडून अवैध उत्तर मिळाले.",
+  "mentorReplyMissing": "AARYA चे उत्तर मिळाले नाही.",
+  "mentorStreamEndedEarly": "AARYA चे उत्तर सेव्ह होण्यापूर्वी स्ट्रीम संपली.",
+  "mentorGenericReplyFailed": "AARYA उत्तर देऊ शकले नाही. इंटरनेट कनेक्शन तपासून पुन्हा प्रयत्न करा.",
+  "mentorRequestFailed": "AARYA ची विनंती अयशस्वी झाली (HTTP {statusCode}). कृपया पुन्हा प्रयत्न करा.",
+  "@mentorRequestFailed": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "mentorCreateConversationFailed": "नवीन संवाद सुरू करता आला नाही. कृपया पुन्हा प्रयत्न करा.",
+  "mentorHistoryFailed": "संवादाचा इतिहास लोड करता आला नाही. कृपया पुन्हा प्रयत्न करा.",
+  "mentorSavedConversation": "सेव्ह केलेला संवाद",
+  "mentorNewConversationTitle": "नवीन संवाद",
+  "mentorDefaultConversationTitle": "संवाद",
+  "mentorAskNextTaskPrompt": "माझ्या पुढील रोडमॅपच्या कामात मदत करा: \"{taskTitle}\". ते लहान, व्यावहारिक टप्प्यांत विभागा आणि अधिक संदर्भ हवा असल्यास मला एक प्रश्न विचारा.",
+  "@mentorAskNextTaskPrompt": {
+    "placeholders": {
+      "taskTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "mentorChooseNextStepPrompt": "माझ्या करिअरच्या उद्दिष्टांनुसार पुढील व्यावहारिक शिकण्याचे पाऊल निवडण्यात मदत करा.",
+  "mentorSuggestedTaskPrompt": "माझ्या पुढील रोडमॅपच्या कामात मदत करा: \"{taskTitle}\". मला स्पष्ट आणि व्यावहारिक टप्पे सांगा.",
+  "@mentorSuggestedTaskPrompt": {
+    "placeholders": {
+      "taskTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "mentorExplainConceptPrompt": "सोप्या उदाहरणासह तांत्रिक संकल्पना समजून घेण्यास मदत करा. गरज असल्यास कोणती संकल्पना समजून घ्यायची ते विचारा.",
+  "mentorStudySessionPrompt": "माझ्या पुढील रोडमॅपच्या कामाला अनुरूप असे एकाग्र अभ्यास सत्र नियोजित करण्यात मदत करा.",
+  "mentorInterviewPrompt": "तांत्रिक मुलाखतीचा सराव करून घ्या. एका वेळी एक प्रश्न विचारा आणि उपयुक्त अभिप्राय द्या.",
+
+
+
+
+
+  "learnSignInPrompt": "तुमचा शिकण्याचा मार्ग पाहण्यासाठी साइन इन करा.",
+  "learnLoadingErrorTitle": "तुमचा शिकण्याचा मार्ग लोड होऊ शकला नाही",
+  "learnLoadingErrorMessage": "तुमचे इंटरनेट कनेक्शन तपासा आणि पुन्हा प्रयत्न करा. रोडमॅप कॅशमध्ये असल्यास, ऑनलाइन झाल्यावर पुन्हा रिफ्रेश करा.",
+  "learnRetry": "पुन्हा प्रयत्न करा",
+  "learnPreferencesSyncWarning": "शिकण्याच्या प्राधान्यक्रमांचे सिंक झाले नाही. public.learn साठी दिलेला SQL सेटअप चालवा आणि पुन्हा प्रयत्न करा. रोडमॅपमधील कार्ये अद्याप दिसत आहेत.",
+  "learnHeaderEyebrow": "तुमची शिकण्याची जागा",
+  "learnHeaderTitle": "शिका आणि तयार करा.",
+  "learnHeaderSubtitle": "{roadmapTitle} मधील पुढील व्यावहारिक पावले.",
+  "learnTasksDone": "पूर्ण केलेली कार्ये",
+  "learnTimeRemaining": "उर्वरित वेळ*",
+  "learnSavedTasks": "जतन केलेली कार्ये",
+  "learnProgressFootnote": "{inProgress} कार्ये सध्या सुरू आहेत · *नोंदवलेल्या अभ्यासवेळेऐवजी अंदाजित कार्यतासांवर आधारित.",
+  "learnContinueCurrentSession": "सध्याचे सत्र सुरू ठेवा",
+  "learnContinueCurrentTask": "सध्याचे कार्य सुरू ठेवा",
+  "learnNextRoadmapTask": "रोडमॅपमधील पुढील कार्य",
+  "learnEstimatedHours": "{duration} अंदाजित",
+  "learnResumeSession": "सत्र पुन्हा सुरू करा",
+  "learnStartNextSession": "पुढील सत्र सुरू करा",
+  "learnOpenTaskDetails": "कार्याचा तपशील उघडा",
+  "learnAllTasksCompleteTitle": "तुम्ही रोडमॅपमधील सर्व कार्ये पूर्ण केली!",
+  "learnAllTasksCompleteMessage": "तयार असाल तेव्हा रोडमॅपचा आढावा घ्या किंवा करिअरची नवीन दिशा जोडा.",
+  "learnSearchHint": "कार्ये, कौशल्ये, टप्पे किंवा डिलिव्हरेबल शोधा",
+  "learnFilterAll": "सर्व",
+  "learnFilterToDo": "करायचे",
+  "learnFilterInProgress": "प्रगतीत",
+  "learnFilterCompleted": "पूर्ण",
+  "learnFilterSaved": "जतन केलेले",
+  "learnTaskListTitle": "तुमची शिकण्याची कार्ये",
+  "learnTaskListSubtitle": "तुमच्या जतन केलेल्या रोडमॅपमधील प्रत्यक्ष कृती.",
+  "learnVisibleTaskCount": "{visibleCount} पैकी {totalCount}",
+  "learnSaveTask": "कार्य जतन करा",
+  "learnRemoveSavedTask": "जतन केलेल्या यादीतून काढा",
+  "learnDueWeek": "अंतिम मुदत: आठवडा {week}",
+  "learnResourceAvailable": "संसाधन उपलब्ध",
+  "learnStatusToDo": "करायचे",
+  "learnStatusInProgress": "प्रगतीत",
+  "learnStatusCompleted": "पूर्ण",
+  "learnNoRoadmapTitle": "तुमचा शिकण्याचा प्रवास रोडमॅपपासून सुरू होतो",
+  "learnNoRoadmapMessage": "Career Recommendations मधून रोडमॅप तयार करा. त्यातील प्रत्यक्ष कार्ये येथे दिसतील आणि काम करताना त्यांची प्रगती नोंदवता येईल.",
+  "learnNoTasksTitle": "अद्याप शिकण्याची कार्ये नाहीत",
+  "learnNoTasksMessage": "तुमच्या जतन केलेल्या रोडमॅपमध्ये कोणतीही कार्ये नाहीत. आढावा घेण्यासाठी किंवा नवीन रोडमॅप तयार करण्यासाठी Roadmap टॅब उघडा.",
+  "learnNoMatchingTasksTitle": "जुळणारी कार्ये नाहीत",
+  "learnNoMatchingTasksMessage": "शोधशब्द बदला किंवा स्थिती/श्रेणी फिल्टर बदला.",
+  "learnSyncNoticeRetry": "सिंक पुन्हा करा",
+  "learnAaryaTip": "AARYA सूचना: कौशल्य सरावासाठी तयार आहे का हे ठरवण्यासाठी प्रत्येक कार्यातील डिलिव्हरेबल आणि यशाचे निकष वापरा.",
+  "learnDurationDialogTitle": "हे कामाचे सत्र किती वेळाचे असेल?",
+  "learnDurationEstimatedTotal": "एकूण अंदाज: {estimated}. आधी नोंदवलेला वेळ: {tracked}. सत्र निवडा; शेवटचे सत्र उर्वरित अंदाजित वेळेनुसार कमी केले जाईल.",
+  "learnDurationNoEstimate": "या कार्यासाठी वेळेचा अंदाज नाही. सत्राचा कालावधी निवडा; काम पूर्ण झाल्यावर कार्य पूर्ण म्हणून चिन्हांकित करू शकता.",
+  "learnCancel": "रद्द करा",
+  "learnStartDuration": "{duration} सुरू करा",
+  "learnTaskDetailsWhatToDo": "काय करायचे",
+  "learnTaskDetailsDeliverable": "डिलिव्हरेबल",
+  "learnTaskDetailsSuccessCriteria": "यशाचे निकष",
+  "learnPriority": "{priority} प्राधान्य",
+  "learnLearningResource": "शिकण्याचे संसाधन",
+  "learnOpenLearningResource": "शिकण्याचे संसाधन उघडा",
+  "learnAnotherTaskInProgress": "\"{taskTitle}\" हे कार्य आधीच सुरू आहे. दुसरे कार्य सुरू करण्यापूर्वी ते पूर्ण करा.",
+  "learnFinishCurrentSessionFirst": "आधी सध्याचे सत्र पूर्ण करा",
+  "learnContinueCurrentSessionButton": "सध्याचे सत्र सुरू ठेवा",
+  "learnStartTask": "कार्य सुरू करा",
+  "learnReopenTask": "कार्य पुन्हा उघडा",
+  "learnFinishSessionEarly": "सत्र वेळेआधी संपवा",
+  "learnMarkTaskCompleted": "कार्य पूर्ण म्हणून चिन्हांकित करा",
+  "learnInvalidResourceUrl": "या शिकण्याच्या संसाधनाची URL अवैध आहे.",
+  "learnCouldNotOpenResource": "हे शिकण्याचे संसाधन उघडता आले नाही.",
+  "learnTimerPermissionMessage": "फ्लोटिंग टाइमर दाखवण्यासाठी Evolyn ला इतर अॅप्सच्या वर दिसण्याची परवानगी द्या.",
+  "learnOverlayPrepareError": "फ्लोटिंग टाइमर तयार करता आला नाही. इतर अॅप्सच्या वर दिसण्याची परवानगी तपासा.",
+  "learnNotificationTimerTitle": "Evolyn • कार्य सुरू आहे",
+  "learnNotificationTimerChannel": "सक्रिय कार्य टाइमर",
+  "learnNotificationTimerChannelDescription": "सध्या सुरू असलेल्या शिकण्याच्या कार्याची उलटी गणना दाखवते",
+  "learnNotificationFinishedTitle": "कार्याची वेळ संपली!",
+  "learnNotificationFinishedBody": "\"{taskTitle}\" चे {duration} सत्र संपले.",
+  "learnNotificationFinishedChannel": "कार्य टाइमर संपला",
+  "learnNotificationFinishedChannelDescription": "शिकण्याच्या कार्याची वेळ मर्यादा पूर्ण झाल्यावर सूचना देते",
+  "learnNotificationPermissionError": "कार्य टाइमर दाखवता आला नाही. नोटिफिकेशन परवानग्या तपासा.",
+  "learnSessionTimeUp": "सत्राची वेळ संपली",
+  "learnSessionTimeLeft": "सत्रासाठी उरलेला वेळ {countdown}",
+  "learnTrackedEstimatedLeft": "{tracked} नोंदवले · अंदाजित {remaining} बाकी",
+  "learnTrackedStartAnother": "{tracked} नोंदवले · दुसरे सत्र सुरू करा",
+  "learnReadyToStartSession": "सत्र सुरू करण्यासाठी तयार",
+  "learnTotalTime": "एकूण वेळ {duration}",
+  "learnTrackedSoFar": "आतापर्यंत {duration} नोंदवले",
+  "learnTaskRemovedFromSaved": "कार्य जतन केलेल्या यादीतून काढले.",
+  "learnTaskSavedForLater": "कार्य नंतरसाठी जतन केले.",
+  "learnBookmarkSaveError": "कार्य जतन करता आले नाही. कनेक्शन आणि learn टेबलच्या परवानग्या तपासा.",
+  "learnRoadmapTimeSavedLearnSyncError": "रोडमॅपचा वेळ जतन झाला, पण शिकण्याच्या प्राधान्यक्रमांचे सिंक झाले नाही. learn टेबलचा सेटअप तपासा.",
+  "learnTaskCompletedEstimateReached": "कार्य पूर्ण झाले. त्याचा अंदाजित एकूण वेळ पूर्ण झाला आहे.",
+  "learnSessionSavedTrackedOfEstimate": "सत्र जतन झाले. {estimated} पैकी {tracked} नोंदवले. पुढे सुरू ठेवण्यासाठी दुसरे सत्र सुरू करा.",
+  "learnSessionSavedNoEstimate": "सत्र जतन झाले ({tracked} नोंदवले). दुसरे सत्र सुरू करण्यासाठी किंवा कार्य पूर्ण म्हणून चिन्हांकित करण्यासाठी कार्य उघडा.",
+  "learnTaskMarkedCompleted": "कार्य पूर्ण म्हणून चिन्हांकित केले.",
+  "learnTaskReopened": "कार्य पुन्हा उघडले. वेळ नोंदवण्याचे नवीन चक्र सुरू होईल.",
+  "learnSessionStarted": "{duration} चे सत्र सुरू झाले.",
+  "learnSessionResumed": "सत्र पुन्हा सुरू झाले.",
+  "learnTaskSessionSaveError": "कार्याचे सत्र जतन करता आले नाही. कृपया पुन्हा प्रयत्न करा.",
+  "learnAnotherTaskStarting": "दुसरे कार्य सुरू होत आहे. कृपया थांबा.",
+  "learnFinishTaskBeforeStartingAnother": "दुसरे कार्य सुरू करण्यापूर्वी \"{taskTitle}\" पूर्ण करा.",
+  "learnTaskPhaseFallback": "टप्पा {phaseNumber}",
+  "learnTaskFallback": "कार्य {taskNumber}",
+  "learnGeneralCategory": "सामान्य",
+  "learnInvalidRoadmapId": "जतन केलेल्या रोडमॅपची ID उपलब्ध नाही.",
+  "learnRoadmapPhaseChanged": "रोडमॅपचा टप्पा बदलला आहे. रिफ्रेश करून पुन्हा प्रयत्न करा.",
+  "learnRoadmapTaskChanged": "रोडमॅपमधील कार्य बदलले आहे. रिफ्रेश करून पुन्हा प्रयत्न करा.",
+  "learnDurationMustBePositive": "सत्राचा कालावधी शून्यापेक्षा जास्त असला पाहिजे.",
+  "learnRoadmapUpdateFailed": "या वापरकर्त्यासाठी रोडमॅप सापडला नाही किंवा अपडेट करता आला नाही.",
+  "learnUnsupportedTaskAction": "ही कार्यवाही समर्थित नाही",
+  "learnTimerOverlayFailed": "फ्लोटिंग टाइमर अयशस्वी झाला",
+  "learnOverlayDataDeliveryFailed": "ओव्हरले डेटा पाठवता आला नाही",
+  "learnCloseTimerFailed": "टाइमर बंद करता आला नाही",
+  "learnCouldNotShowOverlay": "फ्लोटिंग टाइमर दाखवता आला नाही",
+  "learnNotificationInitializationFailed": "नोटिफिकेशन्स सुरू करता आली नाहीत",
+  "learnCouldNotScheduleTimer": "कार्य टाइमर शेड्यूल करता आला नाही",
+  "learnCouldNotCancelNotifications": "टाइमर नोटिफिकेशन्स रद्द करता आली नाहीत",
+  "learnStartSoundFailed": "सुरुवातीचा आवाज वाजवता आला नाही",
+  "learnFinishedSoundFailed": "समाप्तीचा आवाज वाजवता आला नाही",
+  "learnExpiredTaskCheckFailed": "वेळ संपलेल्या कार्याची तपासणी अयशस्वी झाली",
+  "learnResourceLaunchFailed": "संसाधन उघडता आले नाही",
+  "learnBookmarkSaveFailed": "बुकमार्क जतन करणे अयशस्वी झाले",
+  "learnLearnStateMirrorFailed": "शिकण्याच्या स्थितीचे सिंक अयशस्वी झाले",
+  "learnTaskStatusSaveFailed": "कार्याची स्थिती जतन करणे अयशस्वी झाले",
+  "learnRoadmapRefreshFailed": "रोडमॅप रिफ्रेश अयशस्वी झाले",
+  "learnLearnRefreshFailed": "शिकण्याचा डेटा रिफ्रेश अयशस्वी झाला",
+  "@learnAnotherTaskInProgress": {
+    "placeholders": {
+      "taskTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "@learnTotalTime": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "@learnTaskPhaseFallback": {
+    "placeholders": {
+      "phaseNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "@learnFinishTaskBeforeStartingAnother": {
+    "placeholders": {
+      "taskTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "@learnTrackedStartAnother": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      }
+    }
+  },
+  "@learnNotificationFinishedBody": {
+    "placeholders": {
+      "taskTitle": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "@learnStartDuration": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "@learnSessionSavedNoEstimate": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      }
+    }
+  },
+  "@learnSessionTimeLeft": {
+    "placeholders": {
+      "countdown": {
+        "type": "String"
+      }
+    }
+  },
+  "@learnDueWeek": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "@learnHeaderSubtitle": {
+    "placeholders": {
+      "roadmapTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "@learnSessionStarted": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "@learnTrackedSoFar": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "@learnTrackedEstimatedLeft": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      },
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "@learnSessionSavedTrackedOfEstimate": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      },
+      "estimated": {
+        "type": "String"
+      }
+    }
+  },
+  "@learnTaskFallback": {
+    "placeholders": {
+      "taskNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "@learnEstimatedHours": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "@learnPriority": {
+    "placeholders": {
+      "priority": {
+        "type": "String"
+      }
+    }
+  },
+  "@learnProgressFootnote": {
+    "placeholders": {
+      "inProgress": {
+        "type": "int"
+      }
+    }
+  },
+  "@learnVisibleTaskCount": {
+    "placeholders": {
+      "visibleCount": {
+        "type": "int"
+      },
+      "totalCount": {
+        "type": "int"
+      }
+    }
+  },
+  "@learnDurationEstimatedTotal": {
+    "placeholders": {
+      "estimated": {
+        "type": "String"
+      },
+      "tracked": {
+        "type": "String"
+      }
+    }
+  },
+
+
+
+
+
+  "progressEyebrow": "तुमची प्रगती एका नजरेत",
+  "progressTitle": "तुमची प्रगती",
+  "signInPrompt": "तुमची प्रगती पाहण्यासाठी साइन इन करा.",
+  "loadProgressError": "प्रगती लोड करता आली नाही",
+  "connectionRetry": "तुमचे इंटरनेट कनेक्शन तपासा आणि पुन्हा प्रयत्न करा.",
+  "retry": "पुन्हा प्रयत्न करा",
+  "comingSoon": "लवकरच येत आहे!",
+  "noRoadmapTitle": "अद्याप कोणताही रोडमॅप सेव्ह केलेला नाही",
+  "noRoadmapDescription": "Career Recommendations मधून रोडमॅप तयार करा. सेव्ह केल्यानंतर त्याचे टप्पे, कामे आणि माइलस्टोन्स येथे दिसतील.",
+  "currentRoadmap": "सध्याचा रोडमॅप",
+  "openRoadmap": "रोडमॅप उघडा",
+  "phasesCount": "{count} टप्पे",
+  "tasksCount": "{count} कामे",
+  "milestonesCount": "{count} माइलस्टोन्स",
+  "tasksCompleted": "{total} पैकी {completed} कामे पूर्ण",
+  "timeSpentTitle": "प्रत्येक कामासाठी दिलेला वेळ",
+  "timeSpentSubtitle": "सेव्ह केलेल्या रोडमॅपमधील प्रत्येक कामासाठी नोंदवलेला वेळ.",
+  "roadmapMilestonesTitle": "रोडमॅपमधील माइलस्टोन्स",
+  "roadmapMilestonesSubtitle": "तुमच्या सध्याच्या रोडमॅपमध्ये सेव्ह केलेले माइलस्टोन्स.",
+  "completedTasksTitle": "पूर्ण केलेली कामे",
+  "completedTasksSubtitle": "पूर्णत्वाची स्थिती सेव्ह केलेली कामेच येथे दिसतील.",
+  "totalTrackedTime": "एकूण नोंदवलेला वेळ",
+  "notRecordedYet": "अद्याप नोंदवलेला नाही",
+  "trackedCount": "{tracked}/{total} नोंदवलेली",
+  "sessionHistory": "सेशन इतिहास",
+  "savedSessionTimeline": "सेव्ह केलेली सेशन वेळरेषा ({count})",
+  "currentSessionTimeline": "सध्याच्या सेशनची वेळरेषा",
+  "started": "सुरू झाले",
+  "targetEnd": "अपेक्षित समाप्ती",
+  "ended": "समाप्त झाले",
+  "inProgress": "सुरू आहे",
+  "completed": "पूर्ण",
+  "planned": "नियोजित",
+  "taskTotal": "कामाचा एकूण वेळ",
+  "sessionDuration": "सेशनचा कालावधी",
+  "dateLabel": "तारीख",
+  "sessionLabel": "सेशन {number}",
+  "liveDuration": "सुरू · {duration}",
+  "noTime": "वेळ नोंदवलेला नाही",
+  "noTasksAvailable": "कोणतीही कामे उपलब्ध नाहीत",
+  "noTasksSaved": "या रोडमॅपमध्ये अद्याप कोणतीही कामे सेव्ह केलेली नाहीत.",
+  "noMilestonesSaved": "कोणतेही माइलस्टोन्स सेव्ह केलेले नाहीत",
+  "noMilestonesDescription": "रोडमॅपमध्ये समाविष्ट केल्यानंतर माइलस्टोन्स येथे दिसतील.",
+  "noCompletedTasks": "अद्याप पूर्ण केलेल्या कामांची नोंद नाही",
+  "completionNotTracked": "कामांचे पूर्णत्व ट्रॅक केलेले नाही",
+  "completionSavedDescription": "पूर्णत्वाची स्थिती सेव्ह केल्यानंतर पूर्ण केलेली कामे येथे दिसतील.",
+  "completionMissingDescription": "तुमच्या सेव्ह केलेल्या रोडमॅपमध्ये नियोजित कामे आहेत; मात्र त्यांच्या पूर्णत्वाची नोंद उपलब्ध नाही. पूर्णत्वाची माहिती सेव्ह झाल्यानंतर तुमची खरी प्रगती येथे दिसेल.",
+  "aaryaNote": "AARYA कडून एक संदेश",
+  "plannedEffort": "नियोजित प्रयत्न",
+  "estimatedTaskHours": "कामासाठी अंदाजित तास",
+  "milestonesLabel": "माइलस्टोन्स",
+  "inSavedRoadmap": "सेव्ह केलेल्या रोडमॅपमध्ये",
+  "completionTracking": "पूर्णत्व ट्रॅकिंग",
+  "savedCompletionStates": "सेव्ह केलेल्या पूर्णत्वाच्या स्थिती",
+  "taskCompletionUnavailable": "अद्याप सर्व कामांचे पूर्णत्व नोंदवलेले नाही.",
+  "noTasksInRoadmap": "या रोडमॅपमध्ये अद्याप कोणतीही कामे सेव्ह केलेली नाहीत.",
+  "startTimeNotSaved": "सुरुवातीची तारीख/वेळ सेव्ह केलेली नाही",
+  "endTimeNotSaved": "समाप्तीची तारीख/वेळ सेव्ह केलेली नाही",
+  "targetEndNotSaved": "अपेक्षित समाप्ती सेव्ह केलेली नाही",
+  "inProgressValue": "सुरू आहे",
+  "taskTimeFallback": "कामाचा एकूण वेळ सेव्ह आहे; मात्र जुन्या सेशनच्या तारखा आणि सुरुवातीची/समाप्तीची वेळ उपलब्ध नाही.",
+  "sessionHistoryEmpty": "अद्याप सेशन इतिहास नोंदवलेला नाही. LearnScreen मध्ये सेशन लॉगिंग सुरू केल्यानंतर नवीन पूर्ण झालेल्या सेशनची तारीख आणि वेळरेषा येथे दिसेल.",
+  "sessionTotalExplanation": "उपलब्ध असल्यास सेशनचा एकूण वेळ सेव्ह केलेल्या कालावधीवरून मोजला जातो. अंदाजित तास हे नियोजित प्रयत्न आहेत, प्रत्यक्ष अभ्यासाचा वेळ नाही.",
+  "activeElapsedExplanation": "गेलेला वेळ वरील कामाच्या एकूण वेळेत समाविष्ट आहे.",
+  "roadmapTaskFallback": "रोडमॅपमधील काम",
+  "roadmapMilestoneFallback": "रोडमॅपमधील माइलस्टोन",
+  "taskCompletedDetail": "पूर्ण",
+  "taskCompletionNote": "कामाची प्रगती रोडमॅपमध्ये सेव्ह केलेल्या पूर्णत्वाच्या माहितीवरून मोजली जाते. अंदाजित तास नियोजित प्रयत्न दर्शवतात, प्रत्यक्ष अभ्यासाचा वेळ नाही.",
+  "progressDataNote": "प्रगतीची माहिती सेव्ह केलेल्या रोडमॅपवर आधारित आहे. या खात्यासाठी अद्याप कोणताही रोडमॅप सेव्ह केलेला नाही.",
+  "trackingUnavailableNote": "हे डॅशबोर्ड तुमच्या सेव्ह केलेल्या रोडमॅपचा वापर करते. सध्याच्या डेटाबेस रचनेत अभ्यासाचा वेळ, शिकण्यातील सातत्य आणि तारखेनुसार क्रियाकलापांचा इतिहास उपलब्ध नाही; त्यामुळे काल्पनिक आकडे दाखवले जात नाहीत."
+
+    
+}
