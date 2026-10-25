@@ -52,6 +52,7 @@ dependencies:
   audioplayers: ^6.7.1
   flutter_overlay_window: ^1.0.1
   android_intent_plus: ^6.1.0
+  internet_connection_checker_plus: ^3.1.2
 
 dev_dependencies:
   flutter_test:
