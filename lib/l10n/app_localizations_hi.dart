@@ -101,6 +101,9 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
+  String get profileDeletionGracePeriodTitle => 'आपका अकाउंट डिलीट करने के लिए निर्धारित किया गया है';
+
+  @override
   String get profilePrivacyPolicy => 'गोपनीयता नीति';
 
   @override

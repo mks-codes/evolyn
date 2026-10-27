@@ -112,11 +112,17 @@ class SessionNotifier extends Notifier<SessionState> {
       // Session is valid. Now check the Evolyn profile.
       await _loadUserSession(session.user);
     } catch (e) {
-      state = SessionState(
-        status: SessionStatus.error,
-        errorMessage: e.toString(),
-      );
-    }
+  // A network failure does not necessarily mean the user
+  // has been logged out. Preserve any locally saved session.
+  final cachedSession =
+      supabase.Supabase.instance.client.auth.currentSession;
+
+  state = SessionState(
+    status: SessionStatus.error,
+    user: cachedSession?.user,
+    errorMessage: e.toString(),
+  );
+}
   }
 
   bool _hasSavedLanguage(Map<String, dynamic> profile) {
@@ -222,10 +228,14 @@ class SessionNotifier extends Notifier<SessionState> {
 
       await _loadUserSession(session.user);
     } catch (e) {
-      state = SessionState(
-        status: SessionStatus.error,
-        errorMessage: e.toString(),
-      );
-    }
+  final cachedSession =
+      supabase.Supabase.instance.client.auth.currentSession;
+
+  state = SessionState(
+    status: SessionStatus.error,
+    user: cachedSession?.user,
+    errorMessage: e.toString(),
+  );
+}
   }
 }

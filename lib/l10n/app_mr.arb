@@ -31,6 +31,7 @@
   "profileProductUpdatesSubtitle": "Evolyn च्या नवीन सुविधांची माहिती",
   "profileDailyGoal": "दररोजचे शिकण्याचे ध्येय",
   "profileDailyGoalSubtitle": "दररोज {goal}",
+  "profileDeletionGracePeriodTitle": "तुमचे खाते हटवण्यासाठी नियोजित केले आहे",
   "@profileDailyGoalSubtitle": {
     "placeholders": {
       "goal": {

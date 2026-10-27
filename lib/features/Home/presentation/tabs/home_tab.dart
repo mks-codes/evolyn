@@ -8,7 +8,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:evolyn/features/profile/providers/user_display_name_provider.dart';
-
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 class HomeTab extends ConsumerWidget {
   const HomeTab({super.key, this.isActive = true});
 
@@ -686,6 +687,85 @@ class HomeTab extends ConsumerWidget {
   }
 }
 
+Future<void> _saveHomeDashboard(
+  String cacheKey,
+  HomeDashboard dashboard,
+) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+
+    final data = <String, dynamic>{
+      'displayName': dashboard.displayName,
+      'roadmapId': dashboard.roadmapId,
+      'requestId': dashboard.requestId,
+      'generationRequestId': dashboard.generationRequestId,
+      'selectedCareerIds': dashboard.selectedCareerIds,
+      'roadmapTitle': dashboard.roadmapTitle,
+      'roadmapOverview': dashboard.roadmapOverview,
+      'horizonMonths': dashboard.horizonMonths,
+      'phases': dashboard.phases,
+      'tasks': dashboard.tasks,
+      'milestones': dashboard.milestones,
+      'selectedCareers': dashboard.selectedCareers,
+      'response': dashboard.response,
+    };
+
+    await prefs.setString(cacheKey, jsonEncode(data));
+  } catch (error) {
+    // A cache-write failure should not prevent online data from displaying.
+    debugPrint('Failed to save dashboard cache: $error');
+  }
+}
+
+Future<HomeDashboard?> _loadHomeDashboard(
+  String cacheKey,
+) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final cachedJson = prefs.getString(cacheKey);
+
+    if (cachedJson == null || cachedJson.isEmpty) {
+      return null;
+    }
+
+    final decoded = jsonDecode(cachedJson);
+
+    if (decoded is! Map) {
+      return null;
+    }
+
+    final data = Map<String, dynamic>.from(decoded);
+
+    final rawResponse = data['response'];
+
+    return HomeDashboard(
+      displayName: _stringValue(data['displayName'], ''),
+      roadmapId: data['roadmapId']?.toString(),
+      requestId: data['requestId']?.toString(),
+      generationRequestId:
+          data['generationRequestId']?.toString(),
+      selectedCareerIds: data['selectedCareerIds'] is List
+          ? (data['selectedCareerIds'] as List)
+              .map((value) => value.toString())
+              .toList()
+          : <String>[],
+      roadmapTitle: _stringValue(data['roadmapTitle'], ''),
+      roadmapOverview: _stringValue(data['roadmapOverview'], ''),
+      horizonMonths: _intValue(data['horizonMonths']),
+      phases: _asMapList(data['phases']),
+      tasks: _asMapList(data['tasks']),
+      milestones: _asMapList(data['milestones']),
+      selectedCareers: _asMapList(data['selectedCareers']),
+      response: rawResponse is Map
+          ? Map<String, dynamic>.from(rawResponse)
+          : null,
+    );
+  } catch (error) {
+    debugPrint('Failed to load dashboard cache: $error');
+    return null;
+  }
+}
+
 String _localizedCategory(AppLocalizations l10n, String rawCategory) {
   switch (rawCategory.trim().toLowerCase().replaceAll(' ', '_')) {
     case 'project':
@@ -709,87 +789,153 @@ String _localizedCategory(AppLocalizations l10n, String rawCategory) {
 }
 
 /// Loads the signed-in user's profile and their latest saved roadmap.
-final homeDashboardProvider = FutureProvider.autoDispose<HomeDashboard>((ref) async {
-  final supabase = Supabase.instance.client;
-  final user = supabase.auth.currentUser;
+final homeDashboardProvider =
+    FutureProvider.autoDispose<HomeDashboard>((ref) async {
+  final client = Supabase.instance.client;
+  final user = client.auth.currentUser;
+
   if (user == null) {
     throw StateError('You must be signed in to load this dashboard.');
   }
 
-final displayName = await ref.watch(
-  userDisplayNameProvider.future,
-);
+  // Each signed-in user gets a separate local dashboard cache.
+  final cacheKey = 'home_dashboard_${user.id}';
 
-  final rows = await supabase
-      .from('roadmaps')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', ascending: false)
-      .limit(1);
+  try {
+    final displayName =
+        await ref.watch(userDisplayNameProvider.future);
 
-  if (rows.isEmpty) return HomeDashboard(displayName: displayName);
+    final rows = await client
+        .from('roadmaps')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', ascending: false)
+        .limit(1);
 
-  final row = Map<String, dynamic>.from(rows.first as Map);
-  final rawRoadmapData = row['roadmap_data'];
-  final roadmapData = rawRoadmapData is Map
-      ? Map<String, dynamic>.from(rawRoadmapData)
-      : <String, dynamic>{};
+    if (rows.isEmpty) {
+      final dashboard = HomeDashboard(
+        displayName: displayName,
+      );
 
-  final rowPhases = _asMapList(row['phases']);
-  final phases = rowPhases.isNotEmpty ? rowPhases : _asMapList(roadmapData['phases']);
-  final rowTasks = _asMapList(row['tasks']);
-  final tasks = rowTasks.isNotEmpty ? rowTasks : _flattenPhaseList(phases, 'tasks');
-  final rowMilestones = _asMapList(row['milestones']);
-  final milestones = rowMilestones.isNotEmpty ? rowMilestones : _flattenPhaseList(phases, 'milestones');
-  final rowCareers = _asMapList(row['selected_careers']);
-  final selectedCareers = rowCareers.isNotEmpty ? rowCareers : _asMapList(roadmapData['selected_careers']);
+      await _saveHomeDashboard(cacheKey, dashboard);
+      return dashboard;
+    }
 
-  tasks.sort((a, b) {
-    final weekCompare = (_intValue(a['due_week']) ?? 999999).compareTo(_intValue(b['due_week']) ?? 999999);
-    if (weekCompare != 0) return weekCompare;
-    final phaseCompare = (_intValue(a['phase_number']) ?? 999999).compareTo(_intValue(b['phase_number']) ?? 999999);
-    if (phaseCompare != 0) return phaseCompare;
-    return _priorityRank(a['priority']).compareTo(_priorityRank(b['priority']));
-  });
+    final row = Map<String, dynamic>.from(rows.first as Map);
 
-  milestones.sort((a, b) => (_intValue(a['target_week']) ?? 999999).compareTo(_intValue(b['target_week']) ?? 999999));
+    final rawRoadmapData = row['roadmap_data'];
+    final roadmapData = rawRoadmapData is Map
+        ? Map<String, dynamic>.from(rawRoadmapData)
+        : <String, dynamic>{};
 
-  final roadmapId = row['id']?.toString();
-  final requestId = row['career_request_id']?.toString();
-  final generationRequestId = row['generation_request_id']?.toString();
-  final selectedCareerIds = row['selected_career_ids'] is List
-      ? (row['selected_career_ids'] as List).map((value) => value.toString()).toList()
-      : <String>[];
+    final rowPhases = _asMapList(row['phases']);
+    final phases = rowPhases.isNotEmpty
+        ? rowPhases
+        : _asMapList(roadmapData['phases']);
 
-  final response = <String, dynamic>{
-    ...roadmapData,
-    'success': true,
-    'persisted': true,
-    'roadmap_data': roadmapData,
-    'roadmap_id': roadmapId,
-    'request_id': requestId,
-    'generation_request_id': generationRequestId,
-    'status': row['status'] ?? 'draft',
-    'generated_at': row['created_at'],
-  };
+    final rowTasks = _asMapList(row['tasks']);
+    final tasks = rowTasks.isNotEmpty
+        ? rowTasks
+        : _flattenPhaseList(phases, 'tasks');
 
-  final horizon = _intValue(row['planning_horizon_months'] ?? roadmapData['planning_horizon_months']);
+    final rowMilestones = _asMapList(row['milestones']);
+    final milestones = rowMilestones.isNotEmpty
+        ? rowMilestones
+        : _flattenPhaseList(phases, 'milestones');
 
-  return HomeDashboard(
-    displayName: displayName,
-    roadmapId: roadmapId,
-    requestId: requestId,
-    generationRequestId: generationRequestId,
-    selectedCareerIds: selectedCareerIds,
-    roadmapTitle: _stringValue(row['title'] ?? roadmapData['title'], ''),
-    roadmapOverview: _stringValue(row['overview'] ?? roadmapData['overview'], ''),
-    horizonMonths: horizon,
-    phases: phases,
-    tasks: tasks,
-    milestones: milestones,
-    selectedCareers: selectedCareers,
-    response: response,
-  );
+    final rowCareers = _asMapList(row['selected_careers']);
+    final selectedCareers = rowCareers.isNotEmpty
+        ? rowCareers
+        : _asMapList(roadmapData['selected_careers']);
+
+    tasks.sort((a, b) {
+      final weekCompare = (_intValue(a['due_week']) ?? 999999)
+          .compareTo(_intValue(b['due_week']) ?? 999999);
+
+      if (weekCompare != 0) return weekCompare;
+
+      final phaseCompare = (_intValue(a['phase_number']) ?? 999999)
+          .compareTo(_intValue(b['phase_number']) ?? 999999);
+
+      if (phaseCompare != 0) return phaseCompare;
+
+      return _priorityRank(a['priority'])
+          .compareTo(_priorityRank(b['priority']));
+    });
+
+    milestones.sort(
+      (a, b) => (_intValue(a['target_week']) ?? 999999)
+          .compareTo(_intValue(b['target_week']) ?? 999999),
+    );
+
+    final roadmapId = row['id']?.toString();
+    final requestId = row['career_request_id']?.toString();
+    final generationRequestId =
+        row['generation_request_id']?.toString();
+
+    final selectedCareerIds = row['selected_career_ids'] is List
+        ? (row['selected_career_ids'] as List)
+            .map((value) => value.toString())
+            .toList()
+        : <String>[];
+
+    final response = <String, dynamic>{
+      ...roadmapData,
+      'success': true,
+      'persisted': true,
+      'roadmap_data': roadmapData,
+      'roadmap_id': roadmapId,
+      'request_id': requestId,
+      'generation_request_id': generationRequestId,
+      'status': row['status'] ?? 'draft',
+      'generated_at': row['created_at'],
+    };
+
+    final horizon = _intValue(
+      row['planning_horizon_months'] ??
+          roadmapData['planning_horizon_months'],
+    );
+
+    final dashboard = HomeDashboard(
+      displayName: displayName,
+      roadmapId: roadmapId,
+      requestId: requestId,
+      generationRequestId: generationRequestId,
+      selectedCareerIds: selectedCareerIds,
+      roadmapTitle: _stringValue(
+        row['title'] ?? roadmapData['title'],
+        '',
+      ),
+      roadmapOverview: _stringValue(
+        row['overview'] ?? roadmapData['overview'],
+        '',
+      ),
+      horizonMonths: horizon,
+      phases: phases,
+      tasks: tasks,
+      milestones: milestones,
+      selectedCareers: selectedCareers,
+      response: response,
+    );
+
+    // Save the latest successful dashboard for offline use.
+    await _saveHomeDashboard(cacheKey, dashboard);
+
+    return dashboard;
+  } catch (error, stackTrace) {
+    debugPrint('Online dashboard load failed: $error');
+
+    // If online loading fails, use the saved dashboard.
+    final cachedDashboard = await _loadHomeDashboard(cacheKey);
+
+    if (cachedDashboard != null) {
+      debugPrint('Loading dashboard from local cache.');
+      return cachedDashboard;
+    }
+
+    // No saved dashboard exists, so let the UI show its error state.
+    Error.throwWithStackTrace(error, stackTrace);
+  }
 });
 
 class HomeDashboard {

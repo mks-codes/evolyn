@@ -1,9 +1,14 @@
+import 'package:evolyn/core/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/auth_providers.dart';
 import '../providers/auth_state.dart';
+import 'dart:async';
+import '../../../core/widgets/top_message.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'
+  show AuthException, AuthRetryableFetchException;
 
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
@@ -25,52 +30,178 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     super.dispose();
   }
 
-  Future<void> _continue() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
+Future<void> _continue() async {
+  final email = _emailController.text.trim();
+  final password = _passwordController.text;
 
-    // Basic validation
-    if (email.isEmpty) {
-      _showError('Please enter your email.');
-      return;
-    }
+  // Validate empty fields.
+  if (email.isEmpty) {
+    _showError('Please enter your email address.');
+    return;
+  }
 
-    if (password.isEmpty) {
-      _showError('Please enter your password.');
-      return;
-    }
+  if (password.isEmpty) {
+    _showError('Please enter your password.');
+    return;
+  }
 
-    // Start Supabase sign in
+  // Basic email format validation.
+  final emailRegex = RegExp(
+    r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+  );
+
+  if (!emailRegex.hasMatch(email)) {
+    _showError('Please enter a valid email address.');
+    return;
+  }
+
+  try {
     await ref.read(authNotifierProvider.notifier).signIn(
           email: email,
           password: password,
         );
-
+  } on AuthRetryableFetchException {
     if (!mounted) return;
 
-    final authState = ref.read(authNotifierProvider);
+    _showError(
+      'Unable to connect to the server. '
+      'Check your internet connection and try again.',
+    );
+    return;
+  } on TimeoutException {
+    if (!mounted) return;
 
-    if (authState.status == AuthStatus.error) {
-      _showError(
-        authState.errorMessage ?? 'Unable to sign in.',
-      );
-      return;
-    }
+    _showError(
+      'The request timed out. Please try again.',
+    );
+    return;
+  } on AuthException catch (error) {
+    if (!mounted) return;
 
-    if (authState.status == AuthStatus.authenticated) {
-      // Home route will be connected in the next step.
-      context.go('/language-selection');
-    }
+    _showError(
+      _friendlyAuthError(error),
+    );
+    return;
+  } catch (error) {
+    if (!mounted) return;
+
+    _showError(
+      _friendlyErrorMessage(error.toString()),
+    );
+    return;
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
+  if (!mounted) return;
+
+  // Also handle exceptions converted into provider error state.
+  final authState = ref.read(authNotifierProvider);
+
+  if (authState.status == AuthStatus.error) {
+    _showError(
+      _friendlyErrorMessage(
+        authState.errorMessage ?? 'Unable to sign in.',
       ),
     );
+    return;
   }
+
+  if (authState.status == AuthStatus.authenticated) {
+    context.go('/language-selection');
+    await NotificationService.instance.syncIfPermissionAlreadyGranted();
+    return;
+  }
+
+  // Handles unexpected outcomes where authentication did not succeed.
+  _showError(
+    'Unable to sign in right now. Please try again.',
+  );
+}
+
+String _friendlyAuthError(AuthException error) {
+  final code = (error.code ?? '').toLowerCase();
+  final statusCode = error.statusCode ?? '';
+
+  if (code.contains('email_not_confirmed')) {
+    return 'Please verify your email address before signing in.';
+  }
+
+  if (statusCode == '429' ||
+      code.contains('over_request_rate_limit')) {
+    return 'Too many attempts. Please wait a few minutes and try again.';
+  }
+
+  return _friendlyErrorMessage(
+    '${error.code ?? ''} ${error.message} $statusCode',
+  );
+}
+
+String _friendlyErrorMessage(String rawError) {
+  final message = rawError.toLowerCase();
+
+  // Incorrect email or password.
+  if (message.contains('invalid login credentials') ||
+      message.contains('invalid credentials') ||
+      message.contains('invalid password')) {
+    return 'Incorrect email or password. Please try again.';
+  }
+
+  // Email verification required.
+  if (message.contains('email not confirmed') ||
+      message.contains('email_not_confirmed')) {
+    return 'Please verify your email address before signing in.';
+  }
+
+  // Rate limits.
+  if (message.contains('too many requests') ||
+      message.contains('over_request_rate_limit') ||
+      message.contains('rate limit') ||
+      message.contains('429')) {
+    return 'Too many attempts. Please wait a few minutes and try again.';
+  }
+
+  // Offline or network-related failures.
+  if (message.contains('authretryablefetchexception') ||
+      message.contains('socketexception') ||
+      message.contains('failed host lookup') ||
+      message.contains('network is unreachable') ||
+      message.contains('network request failed') ||
+      message.contains('xmlhttprequest error') ||
+      message.contains('failed to fetch') ||
+      message.contains('connection refused') ||
+      message.contains('connection reset') ||
+      message.contains('clientexception') ||
+      message.contains('no address associated with hostname') ||
+      message.contains('network_error')) {
+    return 'No internet connection or the server is unreachable. '
+        'Check your connection and try again.';
+  }
+
+  // Timeout.
+  if (message.contains('timeout') ||
+      message.contains('timed out')) {
+    return 'The request timed out. Please try again.';
+  }
+
+  // Supabase server errors.
+  if (message.contains('502') ||
+      message.contains('503') ||
+      message.contains('504') ||
+      message.contains('500') ||
+      message.contains('internal server error')) {
+    return 'The authentication service is temporarily unavailable. '
+        'Please try again later.';
+  }
+
+  // Never expose raw server or exception details to users.
+  return 'Unable to sign in right now. '
+      'Please check your details and try again.';
+}
+
+void _showError(String message) {
+  if (!mounted) return;
+
+   TopMessage.show(context, message);
+}
 
   @override
   Widget build(BuildContext context) {

@@ -351,6 +351,17 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
           });
     final filteredTasks = _filterTasks(tasks);
 
+    _LearningTask? activeSessionTask;
+
+    for (final task in tasks) {
+      if (task.status == 'in_progress' &&
+          task.startedAt != null &&
+          task.deadlineAt != null) {
+        activeSessionTask = task;
+        break;
+      }
+    }
+
     _LearningTask? nextTask;
     for (final task in tasks) {
       if (task.status == 'in_progress') {
@@ -396,7 +407,15 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
                   _buildNoTasksState(),
                 ] else ...[
                   _buildSummary(tasks),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+
+                  if (activeSessionTask != null) ...[
+                    _buildActiveTaskCard(activeSessionTask),
+                    const SizedBox(height: 20),
+                  ] else ...[
+                    const SizedBox(height: 4),
+                  ],
+
                   if (nextTask != null)
                     _buildContinueCard(
                       nextTask,
@@ -881,6 +900,101 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
     color: Colors.white.withOpacity(0.08),
   );
 
+  Widget _buildActiveTaskCard(_LearningTask task) {
+    final color = _purple;
+    final timerText = _timerLabel(task) ?? _l10n.learnSessionTimeUp;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF211946), Color(0xFF11152B), Color(0xFF101126)],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF4D477F)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.13),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: _BlinkingActiveIndicator(color: color, size: 12),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _BlinkingActiveIndicator(color: color, size: 8),
+                    const SizedBox(width: 6),
+                    Text(
+                      _l10n.learnStatusInProgress.toUpperCase(),
+                      style: const TextStyle(
+                        color: _purple,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  task.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  task.phaseTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.45),
+                    fontSize: 9,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 7,
+                  runSpacing: 7,
+                  children: [
+                    _metaPill(
+                      Icons.schedule_rounded,
+                      _l10n.learnEstimatedHours(
+                        _formatHours(task.estimatedHours),
+                      ),
+                      _cyan,
+                    ),
+                    _metaPill(Icons.timer_outlined, timerText, _gold),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildContinueCard(
     _LearningTask task, {
     required String userId,
@@ -1332,11 +1446,16 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
                       _l10n.learnDueWeek(task.dueWeek),
                       const Color(0xFF8ACFD3),
                     ),
-                  _metaPill(
-                    _statusIcon(task.status),
-                    _statusLabel(task.status),
-                    color,
-                  ),
+                  if (task.status == 'in_progress' &&
+                      task.startedAt != null &&
+                      task.deadlineAt != null)
+                    _activeStatusPill(task)
+                  else
+                    _metaPill(
+                      _statusIcon(task.status),
+                      _statusLabel(task.status),
+                      color,
+                    ),
                   if (task.resourceUrl?.trim().isNotEmpty == true)
                     _metaPill(
                       Icons.link_rounded,
@@ -1360,6 +1479,34 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _activeStatusPill(_LearningTask task) {
+    final color = _statusColor(task.status);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.09),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _BlinkingActiveIndicator(color: color, size: 10),
+          const SizedBox(width: 5),
+          Text(
+            _statusLabel(task.status),
+            style: TextStyle(
+              color: color,
+              fontSize: 8.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -2781,10 +2928,10 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
   String _taskIdentity(_LearningTask task) =>
       '${task.roadmapId}/${task.taskKey}';
 
-void _showMessage(String text) {
-  if (!mounted) return;
-  TopMessage.show(context, text);
-}
+  void _showMessage(String text) {
+    if (!mounted) return;
+    TopMessage.show(context, text);
+  }
 
   Widget _statusPill(String status) {
     final color = _statusColor(status);
@@ -2980,4 +3127,50 @@ class _LearningTask {
   final int? plannedDurationSeconds;
   final int? actualDurationSeconds;
   final LearnRow? learnRow;
+}
+
+class _BlinkingActiveIndicator extends StatefulWidget {
+  const _BlinkingActiveIndicator({required this.color, this.size = 10});
+
+  final Color color;
+  final double size;
+
+  @override
+  State<_BlinkingActiveIndicator> createState() =>
+      _BlinkingActiveIndicatorState();
+}
+
+class _BlinkingActiveIndicatorState extends State<_BlinkingActiveIndicator>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    )..repeat(reverse: true);
+
+    _opacity = Tween<double>(
+      begin: 0.2,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: Icon(Icons.circle, color: widget.color, size: widget.size),
+    );
+  }
 }

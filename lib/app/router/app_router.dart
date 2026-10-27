@@ -15,14 +15,17 @@ import '../../features/roadmap/presentation/roadmap_screen.dart';
 import '../../features/session/providers/session_provider.dart';
 import '../../features/session/providers/session_state.dart';
 import '../../features/splash/presentation/splash_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'route_names.dart';
 import 'router_refresh.dart';
+
 Map<String, dynamic> _asStringDynamicMap(dynamic value) {
   if (value is Map) {
     return Map<String, dynamic>.from(value);
   }
   return <String, dynamic>{};
 }
+
 /// Converts a list of map-like extras into a typed list.
 List<Map<String, dynamic>> _asMapList(dynamic value) {
   if (value is! List) return <Map<String, dynamic>>[];
@@ -33,7 +36,9 @@ List<Map<String, dynamic>> _asMapList(dynamic value) {
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final routerRefresh = ref.watch(routerRefreshProvider.select((notifier) => notifier),);
+  final routerRefresh = ref.watch(
+    routerRefreshProvider.select((notifier) => notifier),
+  );
   return GoRouter(
     initialLocation: RoutePaths.splash,
     refreshListenable: routerRefresh,
@@ -42,6 +47,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final session = ref.read(sessionProvider);
       final location = state.matchedLocation;
 
+      // The locally persisted session can exist even when the
+      // internet connection or the profile API is unavailable.
+      final hasCachedSession =
+          Supabase.instance.client.auth.currentSession != null;
       // ------------------------------------------------------------
       // ROUTE GROUPS
       // ------------------------------------------------------------
@@ -67,6 +76,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (session.status == SessionStatus.checking) {
         // Keep the splash visible until session/profile state is resolved.
+        if (hasCachedSession) {
+          if (isSplash || isPublicRoute) {
+            return RoutePaths.home;
+          }
+
+          return null;
+        }
         return isSplash ? null : RoutePaths.splash;
       }
 
@@ -75,6 +91,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ------------------------------------------------------------
 
       if (session.status == SessionStatus.signedOut) {
+        if (hasCachedSession) {
+          if (isSplash || isPublicRoute) {
+            return RoutePaths.home;
+          }
+
+          return null;
+        }
+
         if (isPublicRoute) return null;
         return RoutePaths.welcome;
       }
@@ -162,6 +186,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ------------------------------------------------------------
 
       if (session.status == SessionStatus.error) {
+        if (hasCachedSession) {
+          if (isSplash || isPublicRoute) {
+            return RoutePaths.home;
+          }
+
+          return null;
+        }
         return RoutePaths.welcome;
       }
 

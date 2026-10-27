@@ -101,6 +101,9 @@ class AppLocalizationsMr extends AppLocalizations {
   }
 
   @override
+  String get profileDeletionGracePeriodTitle => 'तुमचे खाते हटवण्यासाठी नियोजित केले आहे';
+
+  @override
   String get profilePrivacyPolicy => 'गोपनीयता धोरण';
 
   @override

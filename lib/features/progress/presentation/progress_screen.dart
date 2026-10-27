@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:evolyn/core/widgets/page_auto_refresh.dart';
+import 'package:evolyn/core/widgets/top_message.dart';
 import 'package:evolyn/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,7 +29,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   static const Color _gold = Color(0xFFFFC857);
 
   Timer? _ticker;
-
+  // Tracks which completed tasks have their session history expanded.
+final Set<String> _expandedCompletedTaskKeys = <String>{};
   @override
   void initState() {
     super.initState();
@@ -127,9 +129,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       backgroundColor: _background,
       body: SafeArea(
         child: dashboardAsync.when(
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: _purple),
-          ),
+          loading: () =>
+              const Center(child: CircularProgressIndicator(color: _purple)),
           error: (error, stackTrace) => _FeedbackState(
             icon: Icons.cloud_off_outlined,
             title: l10n.loadProgressError,
@@ -261,13 +262,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         ),
         InkWell(
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.comingSoon),
-                duration: const Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            TopMessage.show(context, l10n.comingSoon);
           },
           borderRadius: BorderRadius.circular(14),
           child: Container(
@@ -472,7 +467,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               icon: const Icon(Icons.open_in_new_rounded, size: 14),
-              label: Text(l10n.openRoadmap, style: const TextStyle(fontSize: 11)),
+              label: Text(
+                l10n.openRoadmap,
+                style: const TextStyle(fontSize: 11),
+              ),
             ),
           ),
         ],
@@ -480,10 +478,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildSummaryStats(
-    BuildContext context,
-    ProgressDashboard dashboard,
-  ) {
+  Widget _buildSummaryStats(BuildContext context, ProgressDashboard dashboard) {
     final l10n = AppLocalizations.of(context)!;
     final completedValue = dashboard.allTasksHaveCompletionState
         ? '${dashboard.completedTaskCount}/${dashboard.tasks.length}'
@@ -612,16 +607,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildTaskTimeCard(
-    BuildContext context,
-    ProgressDashboard dashboard,
-  ) {
+  Widget _buildTaskTimeCard(BuildContext context, ProgressDashboard dashboard) {
     final l10n = AppLocalizations.of(context)!;
     if (dashboard.tasks.isEmpty) {
       return _emptyCard(
         icon: Icons.timer_outlined,
         title: l10n.noTasksAvailable,
-        subtitle: 'Task sessions will appear when tasks are saved in your roadmap.',
+        subtitle:
+            'Task sessions will appear when tasks are saved in your roadmap.',
       );
     }
 
@@ -654,11 +647,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
 
     final tasksWithTime = dashboard.tasks
-        .where((task) =>
-            _taskSessions(task).isNotEmpty ||
-            _taskTrackedSeconds(task) != null ||
-            _taskLegacyTrackedSeconds(task) > 0 ||
-            _taskHasActiveSession(task))
+        .where(
+          (task) =>
+              _taskSessions(task).isNotEmpty ||
+              _taskTrackedSeconds(task) != null ||
+              _taskLegacyTrackedSeconds(task) > 0 ||
+              _taskHasActiveSession(task),
+        )
         .length;
 
     return _panelCard(
@@ -760,10 +755,26 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final sessions = _taskSessions(task);
     final completed = _isCompleted(task);
     final status = (task['status'] ?? '').toString().trim().toLowerCase();
-    final inProgress = const {'in_progress', 'in progress', 'running'}
-        .contains(status);
+    final inProgress = const {
+      'in_progress',
+      'in progress',
+      'running',
+    }.contains(status);
     final hasActiveSession = _taskHasActiveSession(task);
     final currentSessionSeconds = _taskCurrentSessionSeconds(task);
+// Only completed tasks with saved sessions can be collapsed.
+final canCollapseSessions = completed && sessions.isNotEmpty;
+// Prefer a saved task ID; use task details as a fallback.
+final expansionKey = [
+  task['id'] ?? task['task_id'] ?? task['task_uuid'] ?? '',
+  task['phase_number'] ?? task['phase_title'] ?? '',
+  task['due_week'] ?? '',
+  task['title'] ?? task['task_title'] ?? '',
+].join('|');
+
+// Active and other non-completed tasks remain expanded as before.
+final sessionsExpanded = !canCollapseSessions ||
+    _expandedCompletedTaskKeys.contains(expansionKey);
 
     final title = _stringValue(
       task['title'] ?? task['task_title'],
@@ -780,8 +791,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final color = completed
         ? _green
         : inProgress
-            ? _purple
-            : _cyan;
+        ? _purple
+        : _cyan;
 
     final sessionCountLabel = sessions.length == 1
         ? '1 session'
@@ -790,12 +801,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final statusLabel = completed
         ? '${l10n.completed} · $sessionCountLabel'
         : hasActiveSession
-            ? '${l10n.inProgress} · ${_formatClockDuration(currentSessionSeconds)}'
-            : inProgress
-                ? '${l10n.inProgress} · $sessionCountLabel'
-                : sessionCountLabel;
+        ? '${l10n.inProgress} · ${_formatClockDuration(currentSessionSeconds)}'
+        : inProgress
+        ? '${l10n.inProgress} · $sessionCountLabel'
+        : sessionCountLabel;
 
-    final hasAnySavedTime = sessions.isNotEmpty ||
+    final hasAnySavedTime =
+        sessions.isNotEmpty ||
         _taskTrackedSeconds(task) != null ||
         _taskLegacyTrackedSeconds(task) > 0 ||
         hasActiveSession;
@@ -805,89 +817,121 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+         Material(
+  color: Colors.transparent,
+  child: InkWell(
+    onTap: canCollapseSessions
+        ? () {
+            setState(() {
+              if (sessionsExpanded) {
+                _expandedCompletedTaskKeys.remove(expansionKey);
+              } else {
+                _expandedCompletedTaskKeys.add(expansionKey);
+              }
+            });
+          }
+        : null,
+    borderRadius: BorderRadius.circular(10),
+    child: Padding(
+      padding: canCollapseSessions
+          ? const EdgeInsets.symmetric(vertical: 3)
+          : EdgeInsets.zero,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 37,
+            height: 37,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(
+              completed
+                  ? Icons.task_alt_rounded
+                  : inProgress
+                      ? Icons.play_circle_outline_rounded
+                      : Icons.timer_outlined,
+              color: color,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  phaseTitle,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.43),
+                    fontSize: 9,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  statusLabel,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Container(
-                width: 37,
-                height: 37,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: Icon(
-                  completed
-                      ? Icons.task_alt_rounded
-                      : inProgress
-                          ? Icons.play_circle_outline_rounded
-                          : Icons.timer_outlined,
-                  color: color,
-                  size: 20,
+              Text(
+                hasAnySavedTime
+                    ? _formatTaskDuration(totalSeconds)
+                    : l10n.noTime,
+                style: TextStyle(
+                  color: hasAnySavedTime ? color : Colors.white38,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                        height: 1.35,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      phaseTitle,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.43),
-                        fontSize: 9,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      statusLabel,
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 8.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.35,
-                      ),
-                    ),
-                  ],
+              const SizedBox(height: 4),
+              Text(
+                l10n.taskTotal,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.38),
+                  fontSize: 7.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
                 ),
-              ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    hasAnySavedTime
-                        ? _formatTaskDuration(totalSeconds)
-                        : l10n.noTime,
-                    style: TextStyle(
-                      color: hasAnySavedTime ? color : Colors.white38,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.taskTotal,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.38),
-                      fontSize: 7.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
+          if (canCollapseSessions) ...[
+            const SizedBox(width: 5),
+            Icon(
+              sessionsExpanded
+                  ? Icons.expand_less_rounded
+                  : Icons.expand_more_rounded,
+              color: Colors.white.withOpacity(0.48),
+              size: 18,
+            ),
+          ],
+        ],
+      ),
+    ),
+  ),
+),
           const SizedBox(height: 12),
 
           if (hasActiveSession) ...[
@@ -898,7 +942,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             ),
             const SizedBox(height: 10),
           ],
-          if (sessions.isNotEmpty) ...[
+          if (sessions.isNotEmpty && sessionsExpanded) ...[
             Row(
               children: [
                 const Icon(Icons.history_rounded, color: _cyan, size: 14),
@@ -919,7 +963,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               _sessionRow(context, sessions[i], i + 1),
               if (i != sessions.length - 1) const SizedBox(height: 8),
             ],
-          ] else if (!hasActiveSession) ...[
+          ] else if (sessions.isEmpty && !hasActiveSession) ...[
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(11),
@@ -1037,7 +1081,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _sessionRow(BuildContext context, Map<String, dynamic> session, int sessionNumber) {
+  Widget _sessionRow(
+    BuildContext context,
+    Map<String, dynamic> session,
+    int sessionNumber,
+  ) {
     final l10n = AppLocalizations.of(context)!;
     final startedAt = _sessionStartedAt(session);
     final endedAt = _sessionEndedAt(session);
@@ -1125,8 +1173,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             value: isRunning
                 ? l10n.inProgressValue
                 : endedAt == null
-                    ? l10n.endTimeNotSaved
-                    : _formatSessionDateTime(endedAt),
+                ? l10n.endTimeNotSaved
+                : _formatSessionDateTime(endedAt),
             color: isRunning ? _purple : _cyan,
           ),
           const SizedBox(height: 4),
@@ -1310,8 +1358,18 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   String _formatSessionDate(DateTime dateTime) {
     final local = dateTime.toLocal();
     const months = <String>[
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final day = local.day.toString().padLeft(2, '0');
     return '$day ${months[local.month - 1]} ${local.year}';
@@ -1343,7 +1401,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     }
 
     final startedAt = DateTime.tryParse((task['started_at'] ?? '').toString());
-    final deadlineAt = DateTime.tryParse((task['deadline_at'] ?? '').toString());
+    final deadlineAt = DateTime.tryParse(
+      (task['deadline_at'] ?? '').toString(),
+    );
     return startedAt != null && deadlineAt != null;
   }
 
@@ -1355,11 +1415,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final elapsed = DateTime.now().difference(startedAt).inSeconds;
     final savedPlannedSeconds = _intValue(task['planned_duration_seconds']);
     final savedPlannedHours = _intValue(task['planned_duration_hours']);
-    final plannedSeconds = savedPlannedSeconds != null && savedPlannedSeconds > 0
+    final plannedSeconds =
+        savedPlannedSeconds != null && savedPlannedSeconds > 0
         ? savedPlannedSeconds
         : (savedPlannedHours != null && savedPlannedHours > 0
-            ? savedPlannedHours * 3600
-            : deadlineAt.difference(startedAt).inSeconds);
+              ? savedPlannedHours * 3600
+              : deadlineAt.difference(startedAt).inSeconds);
     final cap = plannedSeconds > 0
         ? plannedSeconds
         : deadlineAt.difference(startedAt).inSeconds;
@@ -1422,7 +1483,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final completed = _isMilestoneCompleted(milestone);
     final stateKnown = _milestoneHasCompletionState(milestone);
 
-    final title = _stringValue(milestone['title'], l10n.roadmapMilestoneFallback);
+    final title = _stringValue(
+      milestone['title'],
+      l10n.roadmapMilestoneFallback,
+    );
 
     final week = _intValue(milestone['target_week']);
     final criteria = _stringValue(milestone['success_criteria'], '');
@@ -1436,8 +1500,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final statusLabel = completed
         ? l10n.completed
         : stateKnown
-            ? l10n.inProgress
-            : l10n.planned;
+        ? l10n.inProgress
+        : l10n.planned;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1480,8 +1544,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       color: completed
                           ? _green
                           : stateKnown
-                              ? _cyan
-                              : _purple,
+                          ? _cyan
+                          : _purple,
                       fontSize: 8,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.4,
@@ -1582,16 +1646,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildTrackingNote(
-    BuildContext context,
-    ProgressDashboard dashboard,
-  ) {
+  Widget _buildTrackingNote(BuildContext context, ProgressDashboard dashboard) {
     final l10n = AppLocalizations.of(context)!;
     final text = !dashboard.hasRoadmap
         ? l10n.progressDataNote
         : dashboard.allTasksHaveCompletionState
-            ? l10n.taskCompletionNote
-            : l10n.trackingUnavailableNote;
+        ? l10n.taskCompletionNote
+        : l10n.trackingUnavailableNote;
 
     return Container(
       padding: const EdgeInsets.all(15),
@@ -2005,10 +2066,7 @@ bool _isCompleted(Map<String, dynamic> item) {
   return status == 'completed' || status == 'done' || status == 'finished';
 }
 
-String _completedDetail(
-  Map<String, dynamic> task,
-  AppLocalizations l10n,
-) {
+String _completedDetail(Map<String, dynamic> task, AppLocalizations l10n) {
   final phase = _stringValue(task['phase_title'], '');
   final completedAt = task['completed_at']?.toString();
   final parts = <String>[l10n.taskCompletedDetail];

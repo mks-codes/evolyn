@@ -277,6 +277,12 @@ abstract class AppLocalizations {
   /// **'{goal} per day'**
   String profileDailyGoalSubtitle(String goal);
 
+  /// No description provided for @profileDeletionGracePeriodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is scheduled for deletion'**
+  String get profileDeletionGracePeriodTitle;
+
   /// No description provided for @profilePrivacyPolicy.
   ///
   /// In en, this message translates to:

@@ -31,6 +31,7 @@
   "profileProductUpdatesSubtitle": "News about new Evolyn features",
   "profileDailyGoal": "Daily learning goal",
   "profileDailyGoalSubtitle": "{goal} per day",
+   "profileDeletionGracePeriodTitle": "Your account is scheduled for deletion",
   "@profileDailyGoalSubtitle": {
     "placeholders": {
       "goal": {

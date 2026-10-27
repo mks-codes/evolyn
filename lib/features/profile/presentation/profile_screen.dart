@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:evolyn/core/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,7 +13,6 @@ import '../../authentication/providers/auth_providers.dart';
 import '../../roadmap/providers/roadmap_cache_provider.dart';
 import 'package:evolyn/features/profile/providers/user_display_name_provider.dart';
 import 'package:evolyn/core/widgets/top_message.dart';
-
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
@@ -30,7 +30,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   static const Color _cyan = Color(0xFF63D9DD);
   static const Color _danger = Color(0xFFFF858F);
 
-  String _dailyGoal = '2h';
   bool _learningReminders = true;
   bool _weeklyRecap = true;
   bool _productUpdates = false;
@@ -55,7 +54,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       MaterialPageRoute<void>(
         builder: (_) => _AccountCenterScreen(
           onChangePassword: _changePassword,
-          onChangePhone: _changePhone,
           onDeleteAccount: _requestAccountDeletion,
         ),
       ),
@@ -77,37 +75,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     } catch (error) {
       debugPrint('Password update failed: $error');
       if (mounted) _showSnack(_l10n.profileCouldNotUpdatePassword);
-    }
-  }
-
-  Future<void> _changePhone() async {
-    final phone = await showDialog<String>(
-      context: context,
-      builder: (_) => _PhoneDialog(currentPhone: _user?.phone ?? ''),
-    );
-    if (phone == null || !mounted) return;
-
-    try {
-      await _supabase.auth.updateUser(UserAttributes(phone: phone));
-      if (!mounted) return;
-
-      final otp = await showDialog<String>(
-        context: context,
-        builder: (_) => _OtpDialog(phone: phone),
-      );
-      if (otp == null || !mounted) return;
-
-      await _supabase.auth.verifyOTP(
-        type: OtpType.phoneChange,
-        phone: phone,
-        token: otp,
-      );
-      if (mounted) _showSnack(_l10n.profilePhoneUpdated);
-    } on AuthException catch (error) {
-      if (mounted) _showSnack(error.message);
-    } catch (error) {
-      debugPrint('Phone update failed: $error');
-      if (mounted) _showSnack(_l10n.profileCouldNotUpdatePhone);
     }
   }
 
@@ -164,16 +131,57 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     try {
       final response = await _supabase.functions.invoke(
         'delete-account',
-        body: {'reason': result.reason, 'details': result.details},
+        body: {
+          'action': 'request',
+          'reason': result.reason,
+          'details': result.details,
+        },
       );
 
-      if (response.status < 200 || response.status >= 300) {
-        if (mounted) _showSnack(_l10n.profileDeleteRequestFailed);
+      final responseData = response.data;
+
+      if (response.status < 200 ||
+          response.status >= 300 ||
+          responseData is! Map ||
+          responseData['success'] != true) {
+        if (mounted) {
+          _showSnack(_l10n.profileDeleteRequestFailed);
+        }
         return;
       }
 
-      // The deployed function should remove associated data and the Auth user.
-      await _supabase.auth.signOut();
+      if (!mounted) return;
+
+      // This dialog explains the grace period before the session is cleared.
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: _panel,
+          title: Text(
+            _l10n.profileDeletionGracePeriodTitle,
+            style: const TextStyle(color: Colors.white),
+          ),
+          content: Text(
+            _l10n.profileDeletionGracePeriodTitle,
+            style: const TextStyle(color: _muted, height: 1.5, fontSize: 13),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(_l10n.profileDeletionGracePeriodTitle),
+            ),
+          ],
+        ),
+      );
+
+      if (!mounted) return;
+
+      await _supabase.auth.signOut(scope: SignOutScope.local);
+
+      if (mounted) {
+        _showSnack(_l10n.profileDeletionCompleted);
+      }
       if (mounted) _showSnack(_l10n.profileDeletionCompleted);
     } on FunctionException catch (error) {
       debugPrint('Account deletion failed: ${error.details}');
@@ -184,59 +192,161 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  Future<void> _loadPreferences() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      if (!mounted) return;
-      setState(() {
-        _dailyGoal = prefs.getString(_preferenceKey('daily_goal')) ?? '60 min';
-        _learningReminders =
-            prefs.getBool(_preferenceKey('learning_reminders')) ?? true;
-        _weeklyRecap = prefs.getBool(_preferenceKey('weekly_recap')) ?? true;
-        _productUpdates =
-            prefs.getBool(_preferenceKey('product_updates')) ?? false;
-        _preferencesLoaded = true;
-      });
-    } catch (error) {
-      debugPrint('[ProfileScreen] Could not load preferences: $error');
-      if (mounted) setState(() => _preferencesLoaded = true);
+
+
+Future<void> _loadPreferences() async {
+  var learning = true;
+  var recap = true;
+  var updates = false;
+
+  try {
+    final prefs = await SharedPreferences.getInstance();
+
+    learning = prefs.getBool(_preferenceKey('learning_reminders')) ?? true;
+    recap = prefs.getBool(_preferenceKey('weekly_recap')) ?? true;
+    updates = prefs.getBool(_preferenceKey('product_updates')) ?? false;
+
+    final user = _user;
+
+    if (user != null) {
+      final row = await _supabase
+          .from('notification_preferences')
+          .select(
+            'learning_reminders, weekly_recap, product_updates',
+          )
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      if (row != null) {
+        learning = row['learning_reminders'] as bool? ?? true;
+        recap = row['weekly_recap'] as bool? ?? true;
+        updates = row['product_updates'] as bool? ?? false;
+      } else {
+        await _supabase.from('notification_preferences').upsert({
+          'user_id': user.id,
+          'learning_reminders': learning,
+          'weekly_recap': recap,
+          'product_updates': updates,
+        }, onConflict: 'user_id');
+      }
     }
+
+    await prefs.setBool(_preferenceKey('learning_reminders'), learning);
+    await prefs.setBool(_preferenceKey('weekly_recap'), recap);
+    await prefs.setBool(_preferenceKey('product_updates'), updates);
+  } catch (error) {
+    debugPrint('[ProfileScreen] Could not load notification settings: $error');
   }
 
-  Future<void> _saveStringPreference(String key, String value) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_preferenceKey(key), value);
-    } catch (error) {
-      debugPrint('[ProfileScreen] Could not save preference $key: $error');
-      _showSnack(_l10n.profileSavePreferenceFailed);
-    }
+  if (!mounted) return;
+
+  setState(() {
+    _learningReminders = learning;
+    _weeklyRecap = recap;
+    _productUpdates = updates;
+    _preferencesLoaded = true;
+  });
+}
+
+  Future<bool> _ensureNotificationsAllowed() async {
+  if (_user == null) {
+    _showSnack('Please sign in to configure notifications.');
+    return false;
   }
 
-  Future<void> _saveBoolPreference(String key, bool value) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_preferenceKey(key), value);
-    } catch (error) {
-      debugPrint('[ProfileScreen] Could not save preference $key: $error');
-      _showSnack(_l10n.profileSavePreferenceFailed);
+  try {
+    final success = await NotificationService.instance
+        .requestPermissionAndRegister();
+
+    if (!success && mounted) {
+      _showSnack(
+        'Allow notifications in your device settings to receive updates.',
+      );
     }
+
+    return success;
+  } catch (error) {
+    debugPrint('Notification setup failed: $error');
+
+    if (mounted) {
+      _showSnack('Unable to enable notifications. Please try again.');
+    }
+
+    return false;
+  }
+}
+
+Future<void> _saveBoolPreference(String key, bool value) async {
+  final prefs = await SharedPreferences.getInstance();
+  final user = _user;
+
+  // Keep local preferences available if the user is signed out.
+  if (user == null) {
+    await prefs.setBool(_preferenceKey(key), value);
+    return;
   }
 
-  Future<void> _setLearningReminders(bool value) async {
-    setState(() => _learningReminders = value);
+  await _supabase.from('notification_preferences').upsert(
+    {
+      'user_id': user.id,
+      'learning_reminders': _learningReminders,
+      'weekly_recap': _weeklyRecap,
+      'product_updates': _productUpdates,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    },
+    onConflict: 'user_id',
+  );
+
+  await prefs.setBool(_preferenceKey(key), value);
+}
+
+Future<void> _setLearningReminders(bool value) async {
+  if (value && !await _ensureNotificationsAllowed()) return;
+
+  final previous = _learningReminders;
+  setState(() => _learningReminders = value);
+
+  try {
     await _saveBoolPreference('learning_reminders', value);
+  } catch (error) {
+    debugPrint('Could not save learning reminder setting: $error');
+    if (!mounted) return;
+    setState(() => _learningReminders = previous);
+    _showSnack(_l10n.profileSavePreferenceFailed);
   }
+}
 
-  Future<void> _setWeeklyRecap(bool value) async {
-    setState(() => _weeklyRecap = value);
+Future<void> _setWeeklyRecap(bool value) async {
+  if (value && !await _ensureNotificationsAllowed()) return;
+
+  final previous = _weeklyRecap;
+  setState(() => _weeklyRecap = value);
+
+  try {
     await _saveBoolPreference('weekly_recap', value);
+  } catch (error) {
+    debugPrint('Could not save weekly recap setting: $error');
+    if (!mounted) return;
+    setState(() => _weeklyRecap = previous);
+    _showSnack(_l10n.profileSavePreferenceFailed);
   }
+}
 
-  Future<void> _setProductUpdates(bool value) async {
-    setState(() => _productUpdates = value);
+Future<void> _setProductUpdates(bool value) async {
+  if (value && !await _ensureNotificationsAllowed()) return;
+
+  final previous = _productUpdates;
+  setState(() => _productUpdates = value);
+
+  try {
     await _saveBoolPreference('product_updates', value);
+  } catch (error) {
+    debugPrint('Could not save product update setting: $error');
+    if (!mounted) return;
+    setState(() => _productUpdates = previous);
+    _showSnack(_l10n.profileSavePreferenceFailed);
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -266,8 +376,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
 
     final displayName = resolvedName.isNotEmpty
-    ? resolvedName
-    : l10n.profileYourProfile;
+        ? resolvedName
+        : l10n.profileYourProfile;
 
     return Scaffold(
       backgroundColor: _background,
@@ -601,14 +711,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             subtitle: l10n.profileProductUpdatesSubtitle,
             value: _productUpdates,
             onChanged: _setProductUpdates,
-          ),
-          _thinDivider(),
-          _settingsTile(
-            icon: Icons.timer_outlined,
-            title: l10n.profileDailyGoal,
-            subtitle: l10n.profileDailyGoalSubtitle(_dailyGoal),
-            trailing: _trailingValue(_dailyGoal),
-            onTap: _chooseDailyGoal,
           ),
         ],
       ),
@@ -1000,67 +1102,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (mounted) _showSnack(_l10n.profileLanguageUpdated);
   }
 
-  Future<void> _chooseDailyGoal() async {
-    const goals = ['2h', '3h', '4h'];
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: _panel,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetContext) {
-        final l10n = AppLocalizations.of(sheetContext)!;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.profileDailyGoal,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  l10n.profileChooseDailyGoal,
-                  style: const TextStyle(color: _muted, fontSize: 11),
-                ),
-                const SizedBox(height: 12),
-                ...goals.map(
-                  (goal) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      goal,
-                      style: const TextStyle(color: Colors.white, fontSize: 13),
-                    ),
-                    trailing: _dailyGoal == goal
-                        ? const Icon(Icons.check_circle_rounded, color: _purple)
-                        : const Icon(
-                            Icons.circle_outlined,
-                            color: Colors.white24,
-                          ),
-                    onTap: () => Navigator.of(sheetContext).pop(goal),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    if (selected != null && mounted) {
-      setState(() => _dailyGoal = selected);
-      await _saveStringPreference('daily_goal', selected);
-      if (mounted) _showSnack(_l10n.profileDailyGoalSaved);
-    }
-  }
-
   Future<void> _showPrivacyPolicy() async {
     await showModalBottomSheet<void>(
       context: context,
@@ -1211,6 +1252,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     setState(() => _isSigningOut = true);
     try {
+      await NotificationService.instance.unregisterCurrentDevice();
       await ref.read(authRepositoryProvider).signOut();
     } catch (error) {
       debugPrint('[ProfileScreen] Sign-out failed: $error');
@@ -1220,10 +1262,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-void _showSnack(String message) {
-  if (!mounted) return;
-  TopMessage.show(context, message);
-}
+  void _showSnack(String message) {
+    if (!mounted) return;
+    TopMessage.show(context, message);
+  }
 }
 
 /// Owns the TextEditingController for the lifetime of the dialog route.
@@ -1307,12 +1349,10 @@ class _EditProfileNameDialogState extends State<_EditProfileNameDialog> {
 class _AccountCenterScreen extends StatelessWidget {
   const _AccountCenterScreen({
     required this.onChangePassword,
-    required this.onChangePhone,
     required this.onDeleteAccount,
   });
 
   final VoidCallback onChangePassword;
-  final VoidCallback onChangePhone;
   final VoidCallback onDeleteAccount;
 
   static const _panel = Color(0xFF101126);
@@ -1355,7 +1395,7 @@ class _AccountCenterScreen extends StatelessWidget {
             icon: Icons.phone_android_rounded,
             title: l10n.profileMobileNumber,
             subtitle: l10n.profileMobileNumberSubtitle,
-            onTap: onChangePhone,
+            onTap: () => TopMessage.show(context, l10n.comingSoon),
           ),
           const SizedBox(height: 28),
           Text(

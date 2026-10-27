@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "110742286429",
+    "project_id": "evolyn-c3242",
+    "storage_bucket": "evolyn-c3242.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:110742286429:android:e5d41362503ef2c17c1db4",
+        "android_client_info": {
+          "package_name": "com.example.evolyn"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQF2JPgMaGmFmPdOZ-f8S6v9o_2MpGFZs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

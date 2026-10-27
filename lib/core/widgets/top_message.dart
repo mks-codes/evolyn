@@ -12,7 +12,7 @@ class TopMessage {
   static void show(
     BuildContext context,
     String text, {
-    Duration duration = const Duration(seconds: 3),
+    Duration duration = const Duration(seconds: 5),
   }) {
     if (!context.mounted || text.trim().isEmpty) return;
 

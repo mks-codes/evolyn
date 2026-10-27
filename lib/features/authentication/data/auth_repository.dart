@@ -35,18 +35,27 @@ class AuthRepository {
   }
 
   Future<Session?> validateSession() async {
-    if (_supabase.auth.currentSession == null) {
+    final cachedSession = _supabase.auth.currentSession;
+
+    if(cachedSession == null){
       return null;
     }
 
+    if(!cachedSession.isExpired){
+      return cachedSession;
+    }
+
   try {
-    final response =
-        await _supabase.auth.refreshSession();
+    final response = await _supabase.auth.refreshSession();
 
     return response.session;
+  } on AuthRetryableFetchException {
+        // Network failure, timeout, or retryable server error.
+    // Do not interpret this as a logged-out user.
+    rethrow;
   } on AuthException {
-    return null;
-  } catch (_) {
+        // A non-retryable authentication error occurred.
+    // Let the session provider handle this as an invalid session.
     return null;
   }
 }

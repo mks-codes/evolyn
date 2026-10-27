@@ -101,6 +101,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get profileDeletionGracePeriodTitle => 'Your account is scheduled for deletion';
+
+  @override
   String get profilePrivacyPolicy => 'Privacy policy';
 
   @override
