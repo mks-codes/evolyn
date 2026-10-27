@@ -3,7 +3,7 @@ import 'package:evolyn/features/authentication/providers/auth_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:evolyn/core/widgets/top_message.dart';
 class ResetPasswordScreen extends ConsumerStatefulWidget {
   const ResetPasswordScreen({super.key});
 
@@ -29,73 +29,253 @@ class _ResetPasswordScreenState
     super.dispose();
   }
 
-  Future<void> _updatePassword() async {
-    if (_isSubmitting) return;
+  String _friendlyAuthError(Object? error) {
+  final errorText = (error ?? '').toString().toLowerCase();
 
-    if (!_formKey.currentState!.validate()) return;
+  bool containsAny(List<String> patterns) {
+    return patterns.any((pattern) => errorText.contains(pattern));
+  }
 
-    FocusScope.of(context).unfocus();
+  // Internet and network failures.
+  if (containsAny([
+    'network-request-failed',
+    'socketexception',
+    'failed host lookup',
+    'network is unreachable',
+    'no internet',
+    'connection timed out',
+    'connection timeout',
+    'connection reset',
+    'connection refused',
+    'failed to fetch',
+    'httpexception',
+    'clientexception',
+    'handshakeexception',
+    'timeout exception',
+    'timed out',
+    'deadline exceeded',
+  ])) {
+    return 'Unable to connect to the server. Please check your internet '
+        'connection and try again.';
+  }
 
-    setState(() => _isSubmitting = true);
+  // Password does not meet authentication requirements.
+  if (containsAny([
+    'weak-password',
+    'weak_password',
+    'password is too weak',
+    'password should be at least',
+    'password must be at least',
+    'password policy',
+  ])) {
+    return 'Your password does not meet the security requirements. '
+        'Please choose a stronger password.';
+  }
 
+  // New password cannot match the current password.
+  if (containsAny([
+    'same_password',
+    'same password',
+    'password should be different',
+    'password must be different',
+    'new password cannot be the same',
+  ])) {
+    return 'Please choose a password different from your current password.';
+  }
+
+  // Expired or invalid reset links/codes.
+  if (containsAny([
+    'expired-action-code',
+    'invalid-action-code',
+    'expired reset link',
+    'invalid reset link',
+    'password reset token has expired',
+    'invalid or expired token',
+    'invalid token',
+    'otp_expired',
+    'otp expired',
+  ])) {
+    return 'Your password reset link may have expired or is invalid. '
+        'Please request a new password reset link.';
+  }
+
+  // Expired authentication sessions.
+  if (containsAny([
+    'requires-recent-login',
+    'user-token-expired',
+    'invalid-user-token',
+    'session expired',
+    'session_expired',
+    'auth_session_missing',
+    'refresh token expired',
+  ])) {
+    return 'Your session has expired. Please sign in again and restart '
+        'the password reset process.';
+  }
+
+  // Account no longer exists.
+  if (containsAny([
+    'user-not-found',
+    'user_not_found',
+    'account not found',
+    'user does not exist',
+  ])) {
+    return 'We could not find your account. Please sign in again or '
+        'restart the password reset process.';
+  }
+
+  // Too many requests.
+  if (containsAny([
+    'too-many-requests',
+    'too many requests',
+    'too many attempts',
+    'rate limit exceeded',
+    'over_email_send_rate_limit',
+  ])) {
+    return 'Too many attempts have been made. Please wait a while '
+        'before trying again.';
+  }
+
+  // Account disabled.
+  if (containsAny([
+    'user-disabled',
+    'user_disabled',
+    'account disabled',
+  ])) {
+    return 'Your account is currently unavailable. Please contact support '
+        'for assistance.';
+  }
+
+  // Authentication configuration or operation errors.
+  if (containsAny([
+    'operation-not-allowed',
+    'operation_not_allowed',
+    'signup_disabled',
+    'invalid-api-key',
+    'app-not-authorized',
+    'unauthorized-domain',
+    'configuration-not-found',
+  ])) {
+    return 'Password updates are currently unavailable. Please try again '
+        'later or contact support.';
+  }
+
+  // Permission and authorization errors.
+  if (containsAny([
+    'permission-denied',
+    'permission_denied',
+    'unauthorized',
+    'forbidden',
+    'insufficient permissions',
+  ])) {
+    return 'You are not authorized to update this password. '
+        'Please sign in again and try once more.';
+  }
+
+  // Server and service failures.
+  if (containsAny([
+    'internal-error',
+    'internal error',
+    'server error',
+    'service unavailable',
+    'database error',
+    'status code: 500',
+    'status code: 502',
+    'status code: 503',
+    'status code: 504',
+  ])) {
+    return 'Our service is temporarily unavailable. Please try again '
+        'in a few minutes.';
+  }
+
+  // Never display raw technical exceptions.
+  return 'We couldn’t update your password right now. Please try again. '
+      'If the problem continues, contact support.';
+}
+
+Future<void> _updatePassword() async {
+  if (_isSubmitting) return;
+
+  if (!_formKey.currentState!.validate()) return;
+
+  FocusScope.of(context).unfocus();
+
+  setState(() => _isSubmitting = true);
+
+  try {
+    // Step 1: Update the password.
     try {
       await ref.read(authNotifierProvider.notifier).updatePassword(
             newPassword: _passwordController.text,
           );
-
+    } catch (error) {
       if (!mounted) return;
 
-      final authState = ref.read(authNotifierProvider);
+      final providerError =
+          ref.read(authNotifierProvider).errorMessage;
 
-      if (authState.status == AuthStatus.error) {
-        _showMessage(
-          authState.errorMessage ?? 'Unable to update your password.',
-          isError: true,
-        );
-        return;
-      }
+      _showMessage(
+        _friendlyAuthError(providerError ?? error),
+      );
+      return;
+    }
 
-      // The password is updated. Sign out so the user can sign in
-      // with the new password.
+    if (!mounted) return;
+
+    final authState = ref.read(authNotifierProvider);
+
+    if (authState.status == AuthStatus.error) {
+      _showMessage(
+        _friendlyAuthError(authState.errorMessage),
+      );
+      return;
+    }
+
+    // Step 2: Sign out so the user can sign in with the new password.
+    try {
       await ref.read(authNotifierProvider.notifier).signOut();
-
+    } catch (_) {
       if (!mounted) return;
 
-      final signOutState = ref.read(authNotifierProvider);
+      _showMessage(
+        'Your password was changed, but we couldn’t sign you out. '
+        'Please sign out manually.',
+      );
+      return;
+    }
 
-      if (signOutState.status == AuthStatus.error) {
-        _showMessage(
-          'Your password was changed, but sign-out failed. '
-          'Please sign out manually.',
-          isError: true,
-        );
-        return;
-      }
+    if (!mounted) return;
 
-      _passwordController.clear();
-      _confirmPasswordController.clear();
+    final signOutState = ref.read(authNotifierProvider);
 
-      _showMessage('Password updated successfully.');
+    if (signOutState.status == AuthStatus.error) {
+      _showMessage(
+        'Your password was changed, but we couldn’t sign you out. '
+        'Please sign out manually.',
+      );
+      return;
+    }
 
-      // Change this path if your sign-in route has a different name.
-      context.go('/sign-in');
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
+    // Step 3: Clear the form and navigate to sign-in.
+    _passwordController.clear();
+    _confirmPasswordController.clear();
+
+    _showMessage('Password updated successfully.');
+
+    context.go('/sign-in');
+  } catch (error) {
+    if (!mounted) return;
+
+    _showMessage(_friendlyAuthError(error));
+  } finally {
+    if (mounted) {
+      setState(() => _isSubmitting = false);
     }
   }
+}
 
-  void _showMessage(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor:
-              isError ? Colors.red.shade700 : const Color(0xFF292448),
-        ),
-      );
+  void _showMessage(String message) {
+   TopMessage.show(context, message);
   }
 
   InputDecoration _inputDecoration({

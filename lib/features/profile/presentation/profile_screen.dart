@@ -13,6 +13,7 @@ import '../../authentication/providers/auth_providers.dart';
 import '../../roadmap/providers/roadmap_cache_provider.dart';
 import 'package:evolyn/features/profile/providers/user_display_name_provider.dart';
 import 'package:evolyn/core/widgets/top_message.dart';
+
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
@@ -192,161 +193,371 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
+  Future<void> _loadPreferences() async {
+    var learning = true;
+    var recap = true;
+    var updates = false;
+    var reminderTime = const TimeOfDay(hour: 7, minute: 0);
+    var recapTime = const TimeOfDay(hour: 7, minute: 0);
+    var recapDay = 'sunday';
 
+    try {
+      final prefs = await SharedPreferences.getInstance();
 
-Future<void> _loadPreferences() async {
-  var learning = true;
-  var recap = true;
-  var updates = false;
+      learning = prefs.getBool(_preferenceKey('learning_reminders')) ?? true;
+      recap = prefs.getBool(_preferenceKey('weekly_recap')) ?? true;
+      updates = prefs.getBool(_preferenceKey('product_updates')) ?? false;
 
-  try {
-    final prefs = await SharedPreferences.getInstance();
+      reminderTime = _timeFromDatabase(
+        prefs.getString(_preferenceKey('reminder_time')),
+        reminderTime,
+      );
+      recapTime = _timeFromDatabase(
+        prefs.getString(_preferenceKey('weekly_recap_time')),
+        recapTime,
+      );
+      recapDay =
+          prefs.getString(_preferenceKey('weekly_recap_day')) ?? 'sunday';
 
-    learning = prefs.getBool(_preferenceKey('learning_reminders')) ?? true;
-    recap = prefs.getBool(_preferenceKey('weekly_recap')) ?? true;
-    updates = prefs.getBool(_preferenceKey('product_updates')) ?? false;
+      if (!_weekDays.contains(recapDay)) recapDay = 'sunday';
 
-    final user = _user;
+      final user = _user;
 
-    if (user != null) {
-      final row = await _supabase
-          .from('notification_preferences')
-          .select(
-            'learning_reminders, weekly_recap, product_updates',
-          )
-          .eq('user_id', user.id)
-          .maybeSingle();
+      if (user != null) {
+        final row = await _supabase
+            .from('notification_preferences')
+            .select(
+              'learning_reminders, weekly_recap, product_updates, '
+              'reminder_time, weekly_recap_day, weekly_recap_time',
+            )
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-      if (row != null) {
-        learning = row['learning_reminders'] as bool? ?? true;
-        recap = row['weekly_recap'] as bool? ?? true;
-        updates = row['product_updates'] as bool? ?? false;
-      } else {
-        await _supabase.from('notification_preferences').upsert({
-          'user_id': user.id,
-          'learning_reminders': learning,
-          'weekly_recap': recap,
-          'product_updates': updates,
-        }, onConflict: 'user_id');
+        if (row != null) {
+          learning = row['learning_reminders'] as bool? ?? true;
+          recap = row['weekly_recap'] as bool? ?? true;
+          updates = row['product_updates'] as bool? ?? false;
+          reminderTime = _timeFromDatabase(
+            row['reminder_time'],
+            const TimeOfDay(hour: 7, minute: 0),
+          );
+          recapTime = _timeFromDatabase(
+            row['weekly_recap_time'],
+            const TimeOfDay(hour: 7, minute: 0),
+          );
+
+          final savedDay = row['weekly_recap_day']?.toString() ?? 'sunday';
+          recapDay = _weekDays.contains(savedDay) ? savedDay : 'sunday';
+        } else {
+          await _supabase.from('notification_preferences').upsert({
+            'user_id': user.id,
+            'learning_reminders': learning,
+            'weekly_recap': recap,
+            'product_updates': updates,
+            'reminder_time': _timeToDatabase(reminderTime),
+            'weekly_recap_day': recapDay,
+            'weekly_recap_time': _timeToDatabase(recapTime),
+          }, onConflict: 'user_id');
+        }
       }
-    }
 
-    await prefs.setBool(_preferenceKey('learning_reminders'), learning);
-    await prefs.setBool(_preferenceKey('weekly_recap'), recap);
-    await prefs.setBool(_preferenceKey('product_updates'), updates);
-  } catch (error) {
-    debugPrint('[ProfileScreen] Could not load notification settings: $error');
-  }
-
-  if (!mounted) return;
-
-  setState(() {
-    _learningReminders = learning;
-    _weeklyRecap = recap;
-    _productUpdates = updates;
-    _preferencesLoaded = true;
-  });
-}
-
-  Future<bool> _ensureNotificationsAllowed() async {
-  if (_user == null) {
-    _showSnack('Please sign in to configure notifications.');
-    return false;
-  }
-
-  try {
-    final success = await NotificationService.instance
-        .requestPermissionAndRegister();
-
-    if (!success && mounted) {
-      _showSnack(
-        'Allow notifications in your device settings to receive updates.',
+      await prefs.setBool(_preferenceKey('learning_reminders'), learning);
+      await prefs.setBool(_preferenceKey('weekly_recap'), recap);
+      await prefs.setBool(_preferenceKey('product_updates'), updates);
+      await prefs.setString(
+        _preferenceKey('reminder_time'),
+        _timeToDatabase(reminderTime),
+      );
+      await prefs.setString(_preferenceKey('weekly_recap_day'), recapDay);
+      await prefs.setString(
+        _preferenceKey('weekly_recap_time'),
+        _timeToDatabase(recapTime),
+      );
+    } catch (error) {
+      debugPrint(
+        '[ProfileScreen] Could not load notification settings: $error',
       );
     }
 
-    return success;
-  } catch (error) {
-    debugPrint('Notification setup failed: $error');
+    if (!mounted) return;
 
-    if (mounted) {
-      _showSnack('Unable to enable notifications. Please try again.');
+    setState(() {
+      _learningReminders = learning;
+      _weeklyRecap = recap;
+      _productUpdates = updates;
+      _reminderTime = reminderTime;
+      _weeklyRecapDay = recapDay;
+      _weeklyRecapTime = recapTime;
+      _preferencesLoaded = true;
+    });
+  }
+
+  TimeOfDay _reminderTime = const TimeOfDay(hour: 19, minute: 0);
+  TimeOfDay _weeklyRecapTime = const TimeOfDay(hour: 19, minute: 0);
+  String _weeklyRecapDay = 'sunday';
+
+  static const List<String> _weekDays = [
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
+  ];
+
+  String _timeToDatabase(TimeOfDay time) =>
+      '${time.hour.toString().padLeft(2, '0')}:'
+      '${time.minute.toString().padLeft(2, '0')}:00';
+
+  TimeOfDay _timeFromDatabase(dynamic value, TimeOfDay fallback) {
+    if (value == null) return fallback;
+
+    final parts = value.toString().split(':');
+    if (parts.length < 2) return fallback;
+
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+
+    if (hour == null ||
+        minute == null ||
+        hour < 0 ||
+        hour > 23 ||
+        minute < 0 ||
+        minute > 59) {
+      return fallback;
     }
 
-    return false;
-  }
-}
-
-Future<void> _saveBoolPreference(String key, bool value) async {
-  final prefs = await SharedPreferences.getInstance();
-  final user = _user;
-
-  // Keep local preferences available if the user is signed out.
-  if (user == null) {
-    await prefs.setBool(_preferenceKey(key), value);
-    return;
+    return TimeOfDay(hour: hour, minute: minute);
   }
 
-  await _supabase.from('notification_preferences').upsert(
-    {
+  String _formatTime(TimeOfDay time) {
+    return MaterialLocalizations.of(
+      context,
+    ).formatTimeOfDay(time, alwaysUse24HourFormat: false);
+  }
+
+  String _dayLabel(String day) {
+    return day[0].toUpperCase() + day.substring(1);
+  }
+
+  Future<bool> _ensureNotificationsAllowed() async {
+    if (_user == null) {
+      _showSnack('Please sign in to configure notifications.');
+      return false;
+    }
+
+    try {
+      final success = await NotificationService.instance
+          .requestPermissionAndRegister();
+
+      if (!success && mounted) {
+        _showSnack(
+          'Allow notifications in your device settings to receive updates.',
+        );
+      }
+
+      return success;
+    } catch (error) {
+      debugPrint('Notification setup failed: $error');
+
+      if (mounted) {
+        _showSnack('Unable to enable notifications. Please try again.');
+      }
+
+      return false;
+    }
+  }
+
+  Future<void> _chooseReminderTime() async {
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: _reminderTime,
+      helpText: 'Choose daily reminder time',
+    );
+
+    if (selected == null || !mounted) return;
+
+    final previous = _reminderTime;
+    setState(() => _reminderTime = selected);
+
+    try {
+      await _persistNotificationPreferences();
+      if (mounted) _showSnack('Daily reminder time saved.');
+    } catch (error) {
+      debugPrint('Could not save reminder time: $error');
+      if (!mounted) return;
+      setState(() => _reminderTime = previous);
+      _showSnack(_l10n.profileSavePreferenceFailed);
+    }
+  }
+
+  Future<void> _chooseWeeklyRecapTime() async {
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: _weeklyRecapTime,
+      helpText: 'Choose weekly recap time',
+    );
+
+    if (selected == null || !mounted) return;
+
+    final previous = _weeklyRecapTime;
+    setState(() => _weeklyRecapTime = selected);
+
+    try {
+      await _persistNotificationPreferences();
+      if (mounted) _showSnack('Weekly recap time saved.');
+    } catch (error) {
+      debugPrint('Could not save weekly recap time: $error');
+      if (!mounted) return;
+      setState(() => _weeklyRecapTime = previous);
+      _showSnack(_l10n.profileSavePreferenceFailed);
+    }
+  }
+
+  Future<void> _chooseWeeklyRecapDay() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: _panel,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.all(16),
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(8),
+              child: Text(
+                'Weekly recap day',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            ..._weekDays.map(
+              (day) => ListTile(
+                title: Text(
+                  _dayLabel(day),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                trailing: _weeklyRecapDay == day
+                    ? const Icon(Icons.check_circle, color: _purple)
+                    : const Icon(Icons.circle_outlined, color: _muted),
+                onTap: () => Navigator.of(sheetContext).pop(day),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (selected == null || !mounted) return;
+
+    final previous = _weeklyRecapDay;
+    setState(() => _weeklyRecapDay = selected);
+
+    try {
+      await _persistNotificationPreferences();
+      if (mounted) {
+        _showSnack('Weekly recap day saved.');
+      }
+    } catch (error) {
+      debugPrint('Could not save weekly recap day: $error');
+      if (!mounted) return;
+      setState(() => _weeklyRecapDay = previous);
+      _showSnack(_l10n.profileSavePreferenceFailed);
+    }
+  }
+
+  Future<void> _persistNotificationPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setBool(
+      _preferenceKey('learning_reminders'),
+      _learningReminders,
+    );
+    await prefs.setBool(_preferenceKey('weekly_recap'), _weeklyRecap);
+    await prefs.setBool(_preferenceKey('product_updates'), _productUpdates);
+    await prefs.setString(
+      _preferenceKey('reminder_time'),
+      _timeToDatabase(_reminderTime),
+    );
+    await prefs.setString(_preferenceKey('weekly_recap_day'), _weeklyRecapDay);
+    await prefs.setString(
+      _preferenceKey('weekly_recap_time'),
+      _timeToDatabase(_weeklyRecapTime),
+    );
+
+    final user = _user;
+    if (user == null) return;
+
+    await _supabase.from('notification_preferences').upsert({
       'user_id': user.id,
       'learning_reminders': _learningReminders,
       'weekly_recap': _weeklyRecap,
       'product_updates': _productUpdates,
+      'reminder_time': _timeToDatabase(_reminderTime),
+      'weekly_recap_day': _weeklyRecapDay,
+      'weekly_recap_time': _timeToDatabase(_weeklyRecapTime),
       'updated_at': DateTime.now().toUtc().toIso8601String(),
-    },
-    onConflict: 'user_id',
-  );
-
-  await prefs.setBool(_preferenceKey(key), value);
-}
-
-Future<void> _setLearningReminders(bool value) async {
-  if (value && !await _ensureNotificationsAllowed()) return;
-
-  final previous = _learningReminders;
-  setState(() => _learningReminders = value);
-
-  try {
-    await _saveBoolPreference('learning_reminders', value);
-  } catch (error) {
-    debugPrint('Could not save learning reminder setting: $error');
-    if (!mounted) return;
-    setState(() => _learningReminders = previous);
-    _showSnack(_l10n.profileSavePreferenceFailed);
+    }, onConflict: 'user_id');
   }
-}
 
-Future<void> _setWeeklyRecap(bool value) async {
-  if (value && !await _ensureNotificationsAllowed()) return;
-
-  final previous = _weeklyRecap;
-  setState(() => _weeklyRecap = value);
-
-  try {
-    await _saveBoolPreference('weekly_recap', value);
-  } catch (error) {
-    debugPrint('Could not save weekly recap setting: $error');
-    if (!mounted) return;
-    setState(() => _weeklyRecap = previous);
-    _showSnack(_l10n.profileSavePreferenceFailed);
+  Future<void> _saveBoolPreference() async {
+    await _persistNotificationPreferences();
   }
-}
 
-Future<void> _setProductUpdates(bool value) async {
-  if (value && !await _ensureNotificationsAllowed()) return;
+  Future<void> _setLearningReminders(bool value) async {
+    if (value && !await _ensureNotificationsAllowed()) return;
 
-  final previous = _productUpdates;
-  setState(() => _productUpdates = value);
+    final previous = _learningReminders;
+    setState(() => _learningReminders = value);
 
-  try {
-    await _saveBoolPreference('product_updates', value);
-  } catch (error) {
-    debugPrint('Could not save product update setting: $error');
-    if (!mounted) return;
-    setState(() => _productUpdates = previous);
-    _showSnack(_l10n.profileSavePreferenceFailed);
+    try {
+      await _saveBoolPreference();
+    } catch (error) {
+      debugPrint('Could not save learning reminder setting: $error');
+      if (!mounted) return;
+      setState(() => _learningReminders = previous);
+      _showSnack(_l10n.profileSavePreferenceFailed);
+    }
   }
-}
+
+  Future<void> _setWeeklyRecap(bool value) async {
+    if (value && !await _ensureNotificationsAllowed()) return;
+
+    final previous = _weeklyRecap;
+    setState(() => _weeklyRecap = value);
+
+    try {
+      await _saveBoolPreference();
+    } catch (error) {
+      debugPrint('Could not save weekly recap setting: $error');
+      if (!mounted) return;
+      setState(() => _weeklyRecap = previous);
+      _showSnack(_l10n.profileSavePreferenceFailed);
+    }
+  }
+
+  Future<void> _setProductUpdates(bool value) async {
+    if (value && !await _ensureNotificationsAllowed()) return;
+
+    final previous = _productUpdates;
+    setState(() => _productUpdates = value);
+
+    try {
+      await _saveBoolPreference();
+    } catch (error) {
+      debugPrint('Could not save product update setting: $error');
+      if (!mounted) return;
+      setState(() => _productUpdates = previous);
+      _showSnack(_l10n.profileSavePreferenceFailed);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -711,6 +922,30 @@ Future<void> _setProductUpdates(bool value) async {
             subtitle: l10n.profileProductUpdatesSubtitle,
             value: _productUpdates,
             onChanged: _setProductUpdates,
+          ),
+          _thinDivider(),
+          _settingsTile(
+            icon: Icons.schedule_rounded,
+            title: 'Daily reminder time',
+            subtitle: 'Choose when your daily learning reminder arrives',
+            trailing: _trailingValue(_formatTime(_reminderTime)),
+            onTap: _chooseReminderTime,
+          ),
+          _thinDivider(),
+          _settingsTile(
+            icon: Icons.calendar_month_rounded,
+            title: 'Weekly recap day',
+            subtitle: 'Choose any day of the week for your recap',
+            trailing: _trailingValue(_dayLabel(_weeklyRecapDay)),
+            onTap: _chooseWeeklyRecapDay,
+          ),
+          _thinDivider(),
+          _settingsTile(
+            icon: Icons.access_time_rounded,
+            title: 'Weekly recap time',
+            subtitle: 'Choose when your weekly recap arrives',
+            trailing: _trailingValue(_formatTime(_weeklyRecapTime)),
+            onTap: _chooseWeeklyRecapTime,
           ),
         ],
       ),

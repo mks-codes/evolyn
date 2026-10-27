@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_providers.dart';
 import '../providers/auth_state.dart';
-
+import '../../../core/widgets/top_message.dart';
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
 
@@ -31,42 +31,200 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     super.dispose();
   }
 
+void _showMessage(String message) {
+  TopMessage.show(context, message);
+}
+
+String _friendlyAuthError(Object? error) {
+  final errorText = (error ?? '').toString().toLowerCase();
+
+  bool containsAny(List<String> patterns) {
+    return patterns.any((pattern) => errorText.contains(pattern));
+  }
+
+  // Network and internet connection errors.
+  if (containsAny([
+    'network-request-failed',
+    'network error',
+    'no internet',
+    'socketexception',
+    'failed host lookup',
+    'connection timed out',
+    'connection timeout',
+    'connection reset',
+    'connection refused',
+    'connection aborted',
+    'network is unreachable',
+    'unable to resolve host',
+    'name or service not known',
+    'failed to fetch',
+    'httpexception',
+    'timeout exception',
+    'timed out',
+    'deadline exceeded',
+  ])) {
+    return 'Unable to connect to the server. Please check your internet '
+        'connection and try again.';
+  }
+
+  // Email is already registered.
+  if (containsAny([
+    'email-already-in-use',
+    'email_exists',
+    'email already exists',
+    'already registered',
+    'already in use',
+    'duplicate email',
+    'user_already_exists',
+    'user already exists',
+  ])) {
+    return 'An account with this email already exists. '
+        'Please sign in or use another email address.';
+  }
+
+  // Invalid email address.
+  if (containsAny([
+    'invalid-email',
+    'invalid email',
+    'email address is invalid',
+  ])) {
+    return 'Please enter a valid email address.';
+  }
+
+  // Password does not meet the required strength.
+  if (containsAny([
+    'weak-password',
+    'weak_password',
+    'password is too weak',
+    'password should be at least',
+    'password must be at least',
+  ])) {
+    return 'Your password is too weak. Please choose a stronger password.';
+  }
+
+  // Rate limiting.
+  if (containsAny([
+    'too-many-requests',
+    'too many requests',
+    'over_email_send_rate_limit',
+    'rate limit exceeded',
+    'too many attempts',
+  ])) {
+    return 'Too many attempts have been made. Please wait a little '
+        'while before trying again.';
+  }
+
+  // Account disabled by the authentication service.
+  if (containsAny([
+    'user-disabled',
+    'user_disabled',
+    'account disabled',
+    'user is disabled',
+  ])) {
+    return 'This account cannot be used right now. Please contact support '
+        'for assistance.';
+  }
+
+  // Registration is disabled or unavailable.
+  if (containsAny([
+    'operation-not-allowed',
+    'signup_disabled',
+    'sign-up is disabled',
+    'signups are disabled',
+    'signups not allowed',
+  ])) {
+    return 'Account registration is currently unavailable. '
+        'Please try again later.';
+  }
+
+  // Authentication service configuration problems.
+  if (containsAny([
+    'invalid-api-key',
+    'app-not-authorized',
+    'unauthorized-domain',
+    'configuration-not-found',
+  ])) {
+    return 'Account creation is temporarily unavailable. '
+        'Please try again later or contact support.';
+  }
+
+  // Server-side or service errors.
+  if (containsAny([
+    'internal-error',
+    'internal error',
+    'server error',
+    'service unavailable',
+    'database error',
+    'database_error',
+    'status code: 500',
+    'status code: 502',
+    'status code: 503',
+    'status code: 504',
+  ])) {
+    return 'Our service is temporarily unavailable. '
+        'Please try again in a few minutes.';
+  }
+
+  // Fallback: never expose raw technical exceptions to users.
+  return 'We couldn’t create your account right now. '
+      'Please try again. If the problem continues, contact support.';
+}
+
 Future<void> _createAccount() async {
+  // Validate all fields before making an authentication request.
   if (!_formKey.currentState!.validate()) {
     return;
   }
 
-  await ref.read(authNotifierProvider.notifier).signUp(
-        firstName: _firstNameController.text.trim(),
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
-
-  if (!mounted) return;
-
-  final authState = ref.read(authNotifierProvider);
-
-  if (authState.status == AuthStatus.error) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          authState.errorMessage ?? 'Unable to create account.',
-        ),
-      ),
-    );
+  // Prevent duplicate submission.
+  if (ref.read(authNotifierProvider).status == AuthStatus.loading) {
     return;
   }
 
-  if (authState.user != null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Account created. Please check your email to verify your account.',
-        ),
-      ),
-    );
+  try {
+    await ref.read(authNotifierProvider.notifier).signUp(
+          firstName: _firstNameController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
 
-    context.go('/signin');
+    if (!mounted) return;
+
+    final authState = ref.read(authNotifierProvider);
+
+    // Handle errors returned through Riverpod state.
+    if (authState.status == AuthStatus.error) {
+      _showMessage(
+        _friendlyAuthError(authState.errorMessage),
+      );
+      return;
+    }
+
+    // Handle successful account creation.
+    if (authState.user != null) {
+      _showMessage(
+        'Your account has been created. Please check your email '
+        'to verify your account before signing in.',
+      );
+
+      context.go('/signin');
+      return;
+    }
+
+    // Handle unexpected results where neither success nor error is reported.
+    _showMessage(
+      'We couldn’t confirm that your account was created. '
+      'Please try again.',
+    );
+  } catch (error) {
+    if (!mounted) return;
+
+    // Prefer the authentication provider's error when available.
+    final providerError = ref.read(authNotifierProvider).errorMessage;
+
+    _showMessage(
+      _friendlyAuthError(providerError ?? error),
+    );
   }
 }
 

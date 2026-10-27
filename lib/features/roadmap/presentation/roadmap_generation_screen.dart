@@ -9,12 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Receives selected, not-yet-persisted career options, asks the Edge Function
-/// to generate and persist a roadmap, then saves the selected career records.
-///
-/// IMPORTANT: generate-roadmap must accept `selected_careers` directly. It must
-/// not require `selected_career_ids` or fetch the selected careers from
-/// career_recommendations before it can generate the roadmap.
+
 class RoadmapGenerationScreen extends StatefulWidget {
   const RoadmapGenerationScreen({
     super.key,
@@ -406,7 +401,7 @@ class _RoadmapGenerationScreenState extends State<RoadmapGenerationScreen>
     );
 
     context.goNamed(
-      RouteNames.roadmapScreen,
+      RouteNames.home,
       extra: <String, dynamic>{
         'roadmapData': roadmapResult,
         'roadmapId': roadmapId,

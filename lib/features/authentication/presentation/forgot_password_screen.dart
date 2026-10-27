@@ -3,7 +3,7 @@ import 'package:evolyn/features/authentication/providers/auth_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:evolyn/core/widgets/top_message.dart';
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -25,51 +25,184 @@ class _ForgotPasswordScreenState
     super.dispose();
   }
 
-  Future<void> _sendResetEmail() async {
-    if (_isSending) return;
 
-    if (!_formKey.currentState!.validate()) return;
+  void _showMessage(String message) {
+  TopMessage.show(context, message);
+}
 
-    FocusScope.of(context).unfocus();
+String _friendlyResetError(Object? error) {
+  final errorText = (error ?? '').toString().toLowerCase();
 
-    setState(() => _isSending = true);
+  bool containsAny(List<String> patterns) {
+    return patterns.any((pattern) => errorText.contains(pattern));
+  }
 
-    try {
-      await ref.read(authNotifierProvider.notifier).resetPassword(
-            email: _emailController.text.trim(),
-          );
+  // Network and internet connection failures.
+  if (containsAny([
+    'network-request-failed',
+    'network error',
+    'no internet',
+    'socketexception',
+    'failed host lookup',
+    'connection timed out',
+    'connection timeout',
+    'connection reset',
+    'connection refused',
+    'connection aborted',
+    'network is unreachable',
+    'unable to resolve host',
+    'failed to fetch',
+    'httpexception',
+    'clientexception',
+    'handshakeexception',
+    'timeout exception',
+    'timed out',
+    'deadline exceeded',
+  ])) {
+    return 'Unable to connect to the server. Please check your internet '
+        'connection and try again.';
+  }
 
-      if (!mounted) return;
+  // Invalid email.
+  if (containsAny([
+    'invalid-email',
+    'invalid email',
+    'email address is invalid',
+    'validation_failed',
+  ])) {
+    return 'Please check your email address and try again.';
+  }
 
-      final authState = ref.read(authNotifierProvider);
+  // Rate limiting.
+  if (containsAny([
+    'too-many-requests',
+    'too many requests',
+    'too many attempts',
+    'rate limit exceeded',
+    'over_email_send_rate_limit',
+    'over_request_rate_limit',
+  ])) {
+    return 'Too many attempts have been made. Please wait a while '
+        'before requesting another reset link.';
+  }
 
-      if (authState.status == AuthStatus.error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              authState.errorMessage ?? 'Unable to send reset email.',
-            ),
-            backgroundColor: Colors.red.shade700,
-          ),
+  // Reset emails or password-reset operations are disabled.
+  if (containsAny([
+    'operation-not-allowed',
+    'operation_not_allowed',
+    'email_provider_disabled',
+    'email provider is disabled',
+    'password reset is disabled',
+    'password_reset_disabled',
+  ])) {
+    return 'Password reset is temporarily unavailable. '
+        'Please try again later.';
+  }
+
+  // Authentication configuration errors.
+  if (containsAny([
+    'invalid-api-key',
+    'app-not-authorized',
+    'unauthorized-domain',
+    'configuration-not-found',
+  ])) {
+    return 'Password reset is temporarily unavailable. '
+        'Please try again later or contact support.';
+  }
+
+  // Server or service failures.
+  if (containsAny([
+    'internal-error',
+    'internal error',
+    'server error',
+    'service unavailable',
+    'database error',
+    'status code: 500',
+    'status code: 502',
+    'status code: 503',
+    'status code: 504',
+  ])) {
+    return 'Our service is temporarily unavailable. '
+        'Please try again in a few minutes.';
+  }
+
+  // Avoid exposing technical details to users.
+  return 'We couldn’t process your password reset request. '
+      'Please try again. If the problem continues, contact support.';
+}
+
+Future<void> _sendResetEmail() async {
+  if (_isSending) return;
+
+  if (!_formKey.currentState!.validate()) return;
+
+  FocusScope.of(context).unfocus();
+
+  setState(() => _isSending = true);
+
+  try {
+    await ref.read(authNotifierProvider.notifier).resetPassword(
+          email: _emailController.text.trim(),
+        );
+
+    if (!mounted) return;
+
+    final authState = ref.read(authNotifierProvider);
+
+    if (authState.status == AuthStatus.error) {
+      final error = authState.errorMessage ?? '';
+
+      final errorText = error.toLowerCase();
+
+      // Keep account existence private.
+      // Some authentication providers return user-not-found errors.
+      if (errorText.contains('user-not-found') ||
+          errorText.contains('user_not_found') ||
+          errorText.contains('user does not exist') ||
+          errorText.contains('email not found')) {
+        _showMessage(
+          'If an account exists for this email, check your inbox '
+          'for the password reset link.',
         );
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'If an account exists for this email, '
-            'check your inbox for the password reset link.',
-          ),
-          backgroundColor: Color(0xFF292448),
-        ),
+      _showMessage(_friendlyResetError(error));
+      return;
+    }
+
+    _showMessage(
+      'If an account exists for this email, check your inbox '
+      'for the password reset link.',
+    );
+  } catch (error) {
+    if (!mounted) return;
+
+    final providerError =
+        ref.read(authNotifierProvider).errorMessage;
+
+    final effectiveError = providerError ?? error;
+    final errorText = effectiveError.toString().toLowerCase();
+
+    // Do not disclose whether the email is registered.
+    if (errorText.contains('user-not-found') ||
+        errorText.contains('user_not_found') ||
+        errorText.contains('user does not exist') ||
+        errorText.contains('email not found')) {
+      _showMessage(
+        'If an account exists for this email, check your inbox '
+        'for the password reset link.',
       );
-    } finally {
-      if (mounted) {
-        setState(() => _isSending = false);
-      }
+      return;
+    }
+
+    _showMessage(_friendlyResetError(effectiveError));
+  } finally {
+    if (mounted) {
+      setState(() => _isSending = false);
     }
   }
+}
 
   InputDecoration _inputDecoration({
     required String hint,

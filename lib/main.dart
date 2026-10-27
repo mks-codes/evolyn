@@ -82,6 +82,9 @@ Future<void> main() async {
         RoutePaths.home,
         RoutePaths.languageSelection,
         RoutePaths.roadmapScreen,
+        RoutePaths.onboarding,
+        RoutePaths.careerRecommendations,
+        RoutePaths.forgotPassword
       };
 
       if (route is String && allowedRoutes.contains(route)) {
