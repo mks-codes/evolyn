@@ -28,24 +28,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     _scaleAnimation = Tween<double>(
       begin: 0.85,
       end: 1.0,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOutBack,
-      ),
-    );
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeIn,
-      ),
-    );
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
-
+    _controller.forward();
   }
 
   @override
@@ -57,7 +47,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
-     debugPrint('Auth Status: ${authState.status}');
+    debugPrint('Auth Status: ${authState.status}');
     return Scaffold(
       backgroundColor: const Color(0xFF050614),
       body: Stack(
@@ -106,10 +96,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               builder: (context, child) {
                 return FadeTransition(
                   opacity: _fadeAnimation,
-                  child: ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: child,
-                  ),
+                  child: ScaleTransition(scale: _scaleAnimation, child: child),
                 );
               },
               child: Column(
@@ -124,10 +111,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFFA78BFA),
-                          Color(0xFF7C3AED),
-                        ],
+                        colors: [Color(0xFFA78BFA), Color(0xFF7C3AED)],
                       ),
                       boxShadow: [
                         BoxShadow(

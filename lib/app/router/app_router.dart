@@ -16,6 +16,7 @@ import '../../features/session/providers/session_provider.dart';
 import '../../features/session/providers/session_state.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../features/authentication/presentation/email_confirmation_redirect_screen.dart';
 import 'route_names.dart';
 import 'router_refresh.dart';
 
@@ -39,7 +40,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final routerRefresh = ref.watch(
     routerRefreshProvider.select((notifier) => notifier),
   );
-  return GoRouter(
+  final router = GoRouter(
     initialLocation: RoutePaths.splash,
     refreshListenable: routerRefresh,
 
@@ -47,6 +48,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final session = ref.read(sessionProvider);
       final location = state.matchedLocation;
 
+      final isEmailConfirmationSignIn =
+          location == RoutePaths.signin &&
+          state.uri.queryParameters['emailConfirmed'] == 'true';
+
+      if (location == RoutePaths.resetPassword ||
+          location == RoutePaths.emailConfirmed ||
+          isEmailConfirmationSignIn) {
+        return null;
+      }
       // The locally persisted session can exist even when the
       // internet connection or the profile API is unavailable.
       final hasCachedSession =
@@ -68,7 +78,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isCareerRecommendationRoute =
           location == RoutePaths.careerRecommendations;
       final isRoadmapGenerationRoute = location == RoutePaths.roadmapGeneration;
-      final isRoadmapScreenRoute = location == RoutePaths.roadmapScreen;
 
       // ------------------------------------------------------------
       // 1. SESSION IS BEING CHECKED
@@ -76,13 +85,37 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (session.status == SessionStatus.checking) {
         // Keep the splash visible until session/profile state is resolved.
-        if (hasCachedSession) {
-          if (isSplash || isPublicRoute) {
-            return RoutePaths.home;
-          }
+        // if (hasCachedSession) {
+        //   if (isSplash || isPublicRoute) {
+        //     return RoutePaths.home;
+        //   }
 
-          return null;
+        //   return null;
+        // }
+        return isSplash ? null : RoutePaths.splash;
+      }
+
+      // 1. SESSION IS BEING CHECKED
+      if (session.status == SessionStatus.checking) {
+        // Only use a cached destination when the app has restored
+        // a known, locally saved session/profile state.
+        final cachedStatus = session.status;
+
+        if (cachedStatus == SessionStatus.generatingJourney) {
+          return RoutePaths.journeyGeneration;
         }
+
+        if (cachedStatus == SessionStatus.needsOnboarding) {
+          return session.hasSelectedLanguage
+              ? RoutePaths.onboarding
+              : RoutePaths.languageSelection;
+        }
+
+        if (cachedStatus == SessionStatus.ready && hasCachedSession) {
+          return RoutePaths.home;
+        }
+
+        // No reliable local state yet: keep the splash visible.
         return isSplash ? null : RoutePaths.splash;
       }
 
@@ -150,12 +183,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ------------------------------------------------------------
 
       if (session.status == SessionStatus.generatingJourney) {
-        // Allow the whole onboarding-to-roadmap flow. In particular, the
-        // roadmap screen must remain reachable after a successful save.
+
         if (isJourneyGenerationRoute ||
             isCareerRecommendationRoute ||
-            isRoadmapGenerationRoute ||
-            isRoadmapScreenRoute) {
+            isRoadmapGenerationRoute) {
           return null;
         }
 
@@ -239,6 +270,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: RouteNames.resetPassword,
         path: RoutePaths.resetPassword,
         builder: (context, state) => const ResetPasswordScreen(),
+      ),
+
+      GoRoute(
+        name: RouteNames.emailConfirmed,
+        path: RoutePaths.emailConfirmed,
+        builder: (context, state) => const EmailConfirmationRedirectScreen(),
       ),
 
       GoRoute(
@@ -331,4 +368,5 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+  return router;
 });

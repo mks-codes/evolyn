@@ -17,6 +17,9 @@ import 'package:evolyn/core/widgets/page_auto_refresh.dart';
 import 'package:evolyn/features/learn/providers/learn_cache_provider.dart';
 import 'package:evolyn/features/roadmap/providers/roadmap_cache_provider.dart';
 import 'package:evolyn/l10n/app_localizations.dart';
+import '../../learn/widgets/overlay_permission_disclosure.dart';
+import 'package:showcaseview/showcaseview.dart';
+import 'package:evolyn/core/services/guided_tour_service.dart';
 
 class LearnScreen extends ConsumerStatefulWidget {
   const LearnScreen({super.key, this.isActive = true});
@@ -73,6 +76,17 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
   bool get _supportsFloatingOverlay =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
+final GlobalKey _tourPrimaryActionKey = GlobalKey();
+final GlobalKey _tourSearchKey = GlobalKey();
+final GlobalKey _tourSecondaryActionKey = GlobalKey();
+
+bool _tourStartInProgress = false;
+bool _tourStartedThisMount = false;
+bool _tourAlreadySeenThisMount = false;
+bool _tourAutoStartScheduled = false;
+
+String? _tourStateUserId;
+
   @override
   void initState() {
     super.initState();
@@ -102,6 +116,114 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
     );
     unawaited(_initializeTaskNotifications());
   }
+
+
+void _scheduleLearnTour(String userId) {
+  // Keep completion state separate when the authenticated user changes.
+  if (_tourStateUserId != userId) {
+    _tourStateUserId = userId;
+    _tourStartedThisMount = false;
+    _tourAlreadySeenThisMount = false;
+  }
+
+  if (_tourAutoStartScheduled ||
+      _tourStartInProgress ||
+      _tourStartedThisMount ||
+      _tourAlreadySeenThisMount) {
+    return;
+  }
+
+  _tourAutoStartScheduled = true;
+
+  // Wait until the Showcase widgets have been laid out.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _tourAutoStartScheduled = false;
+
+    if (!mounted) return;
+
+    unawaited(
+      _maybeStartTour(
+        screenId: 'learn',
+        targetKeys: <GlobalKey>[
+          _tourPrimaryActionKey,
+          _tourSearchKey,
+          _tourSecondaryActionKey,
+        ],
+      ),
+    );
+  });
+}
+
+Future<void> _maybeStartTour({
+  required String screenId,
+  required List<GlobalKey> targetKeys,
+  bool force = false,
+}) async {
+  if (!mounted || _tourStartInProgress) return;
+
+  if (!force &&
+      (_tourStartedThisMount || _tourAlreadySeenThisMount)) {
+    return;
+  }
+
+  _tourStartInProgress = true;
+
+  try {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+
+    if (userId == null) return;
+
+    _tourStateUserId = userId;
+
+    if (!force) {
+      final hasSeen = await GuidedTourService.hasSeen(
+        userId: userId,
+        screenId: screenId,
+      );
+
+      if (hasSeen) {
+        _tourAlreadySeenThisMount = true;
+        return;
+      }
+    }
+
+    // Allow the interface and its animations to settle.
+    await Future<void>.delayed(
+      const Duration(milliseconds: 350),
+    );
+
+    if (!mounted ||
+        Supabase.instance.client.auth.currentUser?.id != userId) {
+      return;
+    }
+
+    // Do not mark completion if any target is missing.
+    if (targetKeys.any((key) => key.currentContext == null)) {
+      return;
+    }
+
+    // Persist completion before starting to avoid automatic reopening
+    // after rebuilds.
+    await GuidedTourService.markSeen(
+      userId: userId,
+      screenId: screenId,
+    );
+
+    if (!mounted ||
+        Supabase.instance.client.auth.currentUser?.id != userId) {
+      return;
+    }
+
+    _tourStartedThisMount = true;
+
+    ShowCaseWidget.of(context).startShowCase(targetKeys);
+  } catch (error, stackTrace) {
+    debugPrint('Guided tour ($screenId) failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  } finally {
+    _tourStartInProgress = false;
+  }
+}
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -159,6 +281,13 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
     if (!_supportsFloatingOverlay) return;
 
     try {
+    // 1. Explain the overlay permission before checking/requesting it.
+    final mayContinue =
+        await OverlayPermissionDisclosure.showIfNeeded(context);
+
+    // "Not now" means: keep the study timer, but skip the floating overlay.
+    if (!mayContinue || !mounted) return;
+
       var permitted = await FlutterOverlayWindow.isPermissionGranted();
       if (!permitted) {
         final requested = await FlutterOverlayWindow.requestPermission();
@@ -377,6 +506,12 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
         }
       }
     }
+
+    // Only start the Learn tour when a task action and the other targets
+// can be rendered.
+if (nextTask != null && tasks.isNotEmpty) {
+  _scheduleLearnTour(userId);
+}
 
     return Scaffold(
       backgroundColor: _background,
@@ -1103,33 +1238,46 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
           SizedBox(
             width: double.infinity,
             height: 43,
-            child: ElevatedButton.icon(
-              onPressed: _busyTaskKeys.contains(_taskIdentity(task))
-                  ? null
-                  : () =>
-                        _openTask(task, userId: userId, roadmapRow: roadmapRow),
-              icon: const Icon(Icons.play_arrow_rounded, size: 19),
-              label: Text(
-                task.deadlineAt != null && task.startedAt != null
-                    ? _l10n.learnResumeSession
-                    : isInProgress
-                    ? _l10n.learnStartNextSession
-                    : _l10n.learnOpenTaskDetails,
+              child: Showcase(
+                key: _tourPrimaryActionKey,
+                title: 'Start or resume a task',
+                description:
+                    'Open your next learning task here. Review its details and start '
+                    'a focused study session or resume your current session.',
+                child: ElevatedButton.icon(
+                  onPressed: _busyTaskKeys.contains(_taskIdentity(task))
+                      ? null
+                      : () => _openTask(
+                task,
+                userId: userId,
+                roadmapRow: roadmapRow,
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF8B5CF6),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                textStyle: const TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
+                  icon: const Icon(
+                    Icons.play_arrow_rounded,
+                    size: 19,
+                  ),
+                  label: Text(
+                    task.deadlineAt != null && task.startedAt != null
+                        ? _l10n.learnResumeSession
+                        : isInProgress
+                ? _l10n.learnStartNextSession
+                : _l10n.learnOpenTaskDetails,
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF8B5CF6),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -1174,10 +1322,19 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
     ),
   );
 
-  Widget _buildSearchField() => TextField(
+Widget _buildSearchField() => Showcase(
+  key: _tourSearchKey,
+  title: 'Search learning tasks',
+  description:
+      'Type a keyword to find tasks by title, phase, category, '
+      'description, or deliverable.',
+  child: TextField(
     controller: _searchController,
     onChanged: (_) => setState(() {}),
-    style: const TextStyle(color: Colors.white, fontSize: 12.5),
+    style: const TextStyle(
+      color: Colors.white,
+      fontSize: 12.5,
+    ),
     decoration: InputDecoration(
       hintText: _l10n.learnSearchHint,
       hintStyle: TextStyle(
@@ -1196,12 +1353,17 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
                 _searchController.clear();
                 setState(() {});
               },
-              icon: const Icon(Icons.close_rounded, size: 17),
+              icon: const Icon(
+                Icons.close_rounded,
+                size: 17,
+              ),
               color: Colors.white54,
             ),
       filled: true,
       fillColor: _panel,
-      contentPadding: const EdgeInsets.symmetric(vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(
+        vertical: 14,
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
         borderSide: BorderSide.none,
@@ -1212,12 +1374,23 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
-        borderSide: const BorderSide(color: _purple, width: 1.1),
+        borderSide: const BorderSide(
+          color: _purple,
+          width: 1.1,
+        ),
       ),
     ),
-  );
+  ),
+);
 
-  Widget _buildFilters(List<String> categories) => Column(
+Widget _buildFilters(List<String> categories) => Showcase(
+  key: _tourSecondaryActionKey,
+  title: 'Filter your tasks',
+  description:
+      'Use the status filters to show tasks that are to do, in progress, '
+      'completed, or saved. Use the category filters to narrow the list '
+      'further.',
+  child: Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       SizedBox(
@@ -1229,19 +1402,25 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
           itemBuilder: (context, index) {
             final filter = _statusFilters[index];
             final selected = filter == _selectedStatus;
+
             return ChoiceChip(
               label: Text(_statusFilterLabel(filter)),
               selected: selected,
-              onSelected: (_) => setState(() => _selectedStatus = filter),
+              onSelected: (_) {
+                setState(() => _selectedStatus = filter);
+              },
               backgroundColor: _panel,
               selectedColor: const Color(0xFF2A1F4F),
-              side: BorderSide(color: selected ? _purple : _border),
+              side: BorderSide(
+                color: selected ? _purple : _border,
+              ),
               labelStyle: TextStyle(
                 color: selected
                     ? const Color(0xFFC5B7FF)
                     : const Color(0xFF88899F),
                 fontSize: 10,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                fontWeight:
+                    selected ? FontWeight.w600 : FontWeight.w400,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
@@ -1262,15 +1441,26 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
           itemBuilder: (context, index) {
             final category = categories[index];
             final selected = category == _selectedCategory;
+
             return ChoiceChip(
-              label: Text(category == 'All' ? _l10n.learnFilterAll : category),
+              label: Text(
+                category == 'All'
+                    ? _l10n.learnFilterAll
+                    : category,
+              ),
               selected: selected,
-              onSelected: (_) => setState(() => _selectedCategory = category),
+              onSelected: (_) {
+                setState(() => _selectedCategory = category);
+              },
               backgroundColor: const Color(0xFF0D0E20),
               selectedColor: const Color(0xFF173035),
-              side: BorderSide(color: selected ? _cyan : _border),
+              side: BorderSide(
+                color: selected ? _cyan : _border,
+              ),
               labelStyle: TextStyle(
-                color: selected ? _cyan : const Color(0xFF88899F),
+                color: selected
+                    ? _cyan
+                    : const Color(0xFF88899F),
                 fontSize: 9.5,
               ),
               shape: RoundedRectangleBorder(
@@ -1282,7 +1472,8 @@ class _LearnScreenState extends ConsumerState<LearnScreen>
         ),
       ),
     ],
-  );
+  ),
+);
 
   Widget _buildTaskListHeader(int visibleCount, int totalCount) => Row(
     crossAxisAlignment: CrossAxisAlignment.end,

@@ -68,14 +68,15 @@ Future<void> _continue() async {
       'Check your internet connection and try again.',
     );
     return;
-  } on TimeoutException {
-    if (!mounted) return;
+ } on TimeoutException {
+  if (!mounted) return;
 
-    _showError(
-      'The request timed out. Please try again.',
-    );
-    return;
-  } on AuthException catch (error) {
+  _showError(
+    'Your internet connection seems slow. '
+    'Please check your connection and try again.',
+  );
+  return;
+} on AuthException catch (error) {
     if (!mounted) return;
 
     _showError(
@@ -176,11 +177,15 @@ String _friendlyErrorMessage(String rawError) {
         'Check your connection and try again.';
   }
 
-  // Timeout.
-  if (message.contains('timeout') ||
-      message.contains('timed out')) {
-    return 'The request timed out. Please try again.';
-  }
+  // Slow network or request timeout.
+if (message.contains('timeoutexception') ||
+    message.contains('timeout') ||
+    message.contains('timed out') ||
+    message.contains('future not completed') ||
+    message.contains('deadline exceeded')) {
+  return 'Your internet connection seems slow. '
+      'Please check your connection and try again.';
+}
 
   // Supabase server errors.
   if (message.contains('502') ||

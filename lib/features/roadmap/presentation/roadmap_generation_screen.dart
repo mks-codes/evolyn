@@ -4,13 +4,14 @@ import 'dart:math' as math;
 
 import 'package:evolyn/app/router/route_names.dart';
 import 'package:evolyn/features/onboarding/data/career_options_local_storage.dart';
+import 'package:evolyn/features/session/providers/session_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
-class RoadmapGenerationScreen extends StatefulWidget {
+class RoadmapGenerationScreen extends ConsumerStatefulWidget {
   const RoadmapGenerationScreen({
     super.key,
     required this.selectedCareers,
@@ -21,11 +22,11 @@ class RoadmapGenerationScreen extends StatefulWidget {
   final String? requestId;
 
   @override
-  State<RoadmapGenerationScreen> createState() =>
+  ConsumerState<RoadmapGenerationScreen> createState() =>
       _RoadmapGenerationScreenState();
 }
 
-class _RoadmapGenerationScreenState extends State<RoadmapGenerationScreen>
+class _RoadmapGenerationScreenState extends ConsumerState<RoadmapGenerationScreen>
     with SingleTickerProviderStateMixin {
   static const String _roadmapFunctionName = 'generate-roadmap';
 
@@ -40,7 +41,7 @@ class _RoadmapGenerationScreenState extends State<RoadmapGenerationScreen>
   // cooldowntimer
   static const Duration _generationCooldown = Duration(minutes: 2);
   static const String _cooldownStorageKey =
-      'roadmap_generation_cooldown_until_v2';
+      'roadmap_generation_cooldown_until_v3';
   DateTime? _cooldownUntil;
   Duration _cooldownRemaining = Duration.zero;
   Timer? _cooldownTimer;
@@ -83,6 +84,26 @@ class _RoadmapGenerationScreenState extends State<RoadmapGenerationScreen>
     )..repeat(reverse: true);
 
     unawaited(_restoreCooldownOrGenerate());
+  }
+
+  bool _shouldApplyAiCooldown(String? errorCode) {
+    switch (errorCode?.trim().toUpperCase()) {
+      case 'UPSTREAM_TIMEOUT':
+      case 'RATE_LIMITED':
+      case 'UPSTREAM_AUTH_ERROR':
+      case 'UPSTREAM_MODEL_NOT_FOUND':
+      case 'UPSTREAM_INVALID_REQUEST':
+      case 'UPSTREAM_ERROR':
+      case 'EMPTY_MODEL_RESPONSE':
+      case 'INVALID_MODEL_RESPONSE':
+      case 'MODEL_OUTPUT_TOO_LARGE':
+        return true;
+
+      default:
+        // Validation, authentication, onboarding, profile, idempotency,
+        // and persistence failures must not start a new AI cooldown.
+        return false;
+    }
   }
 
   Future<void> _restoreCooldownOrGenerate() async {
@@ -327,11 +348,8 @@ class _RoadmapGenerationScreenState extends State<RoadmapGenerationScreen>
       'career_title',
       'career_category',
       'match_score',
-      'match_level',
       'match_summary',
       'why_it_matches',
-      'supporting_evidence',
-      'existing_skill_alignment',
       'skills_to_develop',
       'entry_requirements',
       'accessibility_considerations',
@@ -365,23 +383,12 @@ class _RoadmapGenerationScreenState extends State<RoadmapGenerationScreen>
       );
     }
 
-    debugPrint('[PROFILE] journey_completed=true; roadmap_completed=true');
+    debugPrint('[PROFILE] journey_ready=true; roadmap_completed=true');
   }
 
-  Future<void> _navigateToRoadmap({
-    required Map<String, dynamic> roadmapResult,
-    required String requestId,
-    required String generationRequestId,
-    required List<Map<String, dynamic>> savedCareers,
-    required List<String> selectedIds,
-  }) async {
-    final roadmapId = roadmapResult['roadmap_id']?.toString();
-    if (roadmapId == null || roadmapId.isEmpty) {
-      throw const FormatException(
-        'The saved roadmap ID is missing from the response.',
-      );
-    }
-
+  /// Navigates directly to Home after the profile completion update succeeds.
+  /// No completion flag or other data is passed through the route.
+  Future<void> _navigateToHome() async {
     if (!mounted) return;
 
     _progressTimer?.cancel();
@@ -392,37 +399,32 @@ class _RoadmapGenerationScreenState extends State<RoadmapGenerationScreen>
     });
 
     await Future<void>.delayed(const Duration(milliseconds: 350));
+
+      // Update or refresh the Riverpod session state first.
+  await ref
+      .read(sessionProvider.notifier)
+      .refresh();
+
     if (!mounted) return;
 
-    debugPrint(
-      '[roadmap-navigation] Opening ${RouteNames.roadmapScreen}; '
-      'roadmapId=$roadmapId; '
-      'reused=${roadmapResult['idempotent_replay'] == true}; ',
-    );
-
-    context.goNamed(
-      RouteNames.home,
-      extra: <String, dynamic>{
-        'roadmapData': roadmapResult,
-        'roadmapId': roadmapId,
-        'requestId': requestId,
-        'generationRequestId': generationRequestId,
-      },
-    );
+    debugPrint('[roadmap-navigation] Roadmap completed; opening Home.');
+    context.goNamed(RouteNames.home);
   }
 
   Future<void> _generateRoadmap() async {
     if (_requestInFlight) return;
 
     if (widget.selectedCareers.isEmpty) {
-      _setFailure(
+      _setValidationFailure(
         'No careers were selected. Return and select at least one career.',
       );
       return;
     }
 
-    if (widget.selectedCareers.length > 3) {
-      _setFailure('A maximum of 3 careers can be included in a roadmap.');
+    if (widget.selectedCareers.length > 1) {
+      _setValidationFailure(
+        'A maximum of 1 career can be included in a roadmap.',
+      );
       return;
     }
 
@@ -430,21 +432,20 @@ class _RoadmapGenerationScreenState extends State<RoadmapGenerationScreen>
     final session = supabase.auth.currentSession;
 
     if (session == null) {
-      _setFailure('Please sign in before generating your roadmap.');
+      _setValidationFailure('Please sign in before generating your roadmap.');
       return;
     }
 
     final requestId = _effectiveRequestId;
     if (requestId == null || requestId.trim().isEmpty) {
-      _setFailure(
+      _setValidationFailure(
         'The career request ID is missing. Return and select your careers again.',
       );
       return;
     }
 
-    // Keep the same generation ID across retries on this screen. The Edge
-    // Function should use it as an idempotency key and return the same saved
-    // roadmap if the first response was lost after a successful save.
+    // The server owns idempotency; keep the request ID stable for retries
+    // while this screen remains mounted.
     final generationRequestId = _generationRequestId ??= _newUuidV4();
 
     setState(() {
@@ -480,7 +481,7 @@ class _RoadmapGenerationScreenState extends State<RoadmapGenerationScreen>
               'selected_careers': careersForFunction,
             },
           )
-          .timeout(const Duration(seconds: 120));
+          .timeout(const Duration(seconds: 135));
 
       dynamic responseData = response.data;
       if (responseData is String) {
@@ -556,13 +557,9 @@ class _RoadmapGenerationScreenState extends State<RoadmapGenerationScreen>
         debugPrintStack(stackTrace: cacheStack);
       }
 
-      await _navigateToRoadmap(
-        roadmapResult: roadmapResult,
-        requestId: requestId,
-        generationRequestId: generationRequestId,
-        savedCareers: widget.selectedCareers,
-        selectedIds: selectedIds,
-      );
+      // The profile was marked completed above. Navigate only after that
+      // update succeeds, and do not pass state through the Home route.
+      await _navigateToHome();
     } on FunctionException catch (error, stackTrace) {
       final dynamic details = error.details;
       Map<String, dynamic>? errorBody;
@@ -580,28 +577,55 @@ class _RoadmapGenerationScreenState extends State<RoadmapGenerationScreen>
         }
       }
 
-      final errorCode = errorBody?['error']?.toString();
-      final serverMessage = errorBody?['message']?.toString();
-      final retryAfterValue = errorBody?['retry_after_seconds'];
+      // The backend contract returns the error code as a top-level string.
+      // Also support a nested error object in case the response is wrapped.
+      final nestedError = errorBody?['error'];
+      final errorCode = nestedError is Map
+          ? nestedError['code']?.toString()
+          : nestedError?.toString();
 
-      final Duration? serverCooldownDuration =
-          errorCode == 'ROADMAP_COOLDOWN_ACTIVE' &&
-              retryAfterValue is num &&
-              retryAfterValue > 0
-          ? Duration(seconds: retryAfterValue.toInt())
+      final nestedMessage = nestedError is Map
+          ? nestedError['message']?.toString()
           : null;
+
+      final serverMessage = errorBody?['message']?.toString() ?? nestedMessage;
+
+      final retryAfterValue = errorBody?['retry_after_seconds'];
+      final rawCooldownUntil = errorBody?['cooldown_until']?.toString();
+
+      final parsedCooldownUntil = rawCooldownUntil == null
+          ? null
+          : DateTime.tryParse(rawCooldownUntil)?.toLocal();
+
+      Duration? serverCooldownDuration;
+
+      if (parsedCooldownUntil != null &&
+          parsedCooldownUntil.isAfter(DateTime.now())) {
+        serverCooldownDuration = parsedCooldownUntil.difference(DateTime.now());
+      } else if (retryAfterValue is num && retryAfterValue > 0) {
+        serverCooldownDuration = Duration(seconds: retryAfterValue.ceil());
+      }
+
+      final activeServerCooldown = errorCode == 'ROADMAP_COOLDOWN_ACTIVE';
+
+      final applyCooldown =
+          activeServerCooldown ||
+          serverCooldownDuration != null ||
+          _shouldApplyAiCooldown(errorCode);
+
       debugPrint(
         '[generate-roadmap] HTTP ${error.status}; '
-        'code=$errorCode; message=${serverMessage ?? details}',
+        'code=$errorCode; message=${serverMessage ?? details}; '
+        'applyCooldown=$applyCooldown',
       );
       debugPrintStack(stackTrace: stackTrace);
 
-      if (!mounted) return;
-      _setFailure(
+      _setServerFailure(
         serverMessage != null && serverMessage.isNotEmpty
             ? serverMessage
             : 'Roadmap request failed (HTTP ${error.status}).',
         cooldownDuration: serverCooldownDuration,
+        applyCooldown: applyCooldown,
       );
     } on PostgrestException catch (error, stackTrace) {
       debugPrint('========== PROFILE UPDATE ERROR ==========');
@@ -612,9 +636,7 @@ class _RoadmapGenerationScreenState extends State<RoadmapGenerationScreen>
       debugPrintStack(stackTrace: stackTrace);
       debugPrint('===========================================');
 
-      if (!mounted) return;
-
-      _setFailure(
+      _setServerFailure(
         'Your roadmap was saved, but updating your profile completion '
         'status failed. Please retry.',
       );
@@ -628,15 +650,13 @@ class _RoadmapGenerationScreenState extends State<RoadmapGenerationScreen>
       debugPrintStack(stackTrace: stackTrace);
       debugPrint('==============================================');
 
-      if (!mounted) return;
-
-      _setFailure(actualError);
+      _setServerFailure(actualError);
     } finally {
       _requestInFlight = false;
     }
   }
 
-  void _setFailure(String message, {Duration? cooldownDuration}) {
+  void _setValidationFailure(String message) {
     _progressTimer?.cancel();
 
     if (!mounted) return;
@@ -644,10 +664,40 @@ class _RoadmapGenerationScreenState extends State<RoadmapGenerationScreen>
     setState(() {
       _isGenerating = false;
       _errorMessage = message;
+      _completedSteps = 0;
     });
 
-    unawaited(_beginCooldown(duration: cooldownDuration));
+    // No cooldown for local validation failures.
   }
+
+void _setServerFailure(
+  String message, {
+  Duration? cooldownDuration,
+  bool applyCooldown = false,
+}) {
+  _progressTimer?.cancel();
+
+  if (mounted) {
+    setState(() {
+      _isGenerating = false;
+      _errorMessage = message;
+      _completedSteps = 0;
+
+      if (!applyCooldown) {
+        _cooldownUntil = null;
+        _cooldownRemaining = Duration.zero;
+      }
+    });
+  }
+
+  if (applyCooldown) {
+    unawaited(_beginCooldown(duration: cooldownDuration));
+  } else {
+    _cooldownTimer?.cancel();
+    _cooldownTimer = null;
+    unawaited(_clearPersistedCooldown());
+  }
+}
 
   @override
   void dispose() {
@@ -1134,87 +1184,82 @@ class _RoadmapGenerationScreenState extends State<RoadmapGenerationScreen>
     );
   }
 
-Widget _buildBottomButton() {
-  return Positioned(
-    left: 20,
-    right: 20,
-    bottom: 12,
-    child: SafeArea(
-      top: false,
-      child: SizedBox(
-        height: 53,
-        child: _cooldownRemaining > Duration.zero
-            ? Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF302947),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFF484064),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.lock_clock_rounded,
-                      size: 18,
-                      color: Color(0xFFA78BFA),
-                    ),
-                    const SizedBox(width: 9),
-                    Text(
-                      'Try again in ${_formatCooldown(_cooldownRemaining)}',
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : ElevatedButton(
-                onPressed: _isGenerating
-                    ? null
-                    : (_errorMessage != null
-                        ? _generateRoadmap
-                        : null),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF8B5CF6),
-                  disabledBackgroundColor: const Color(0xFF302947),
-                  foregroundColor: Colors.white,
-                  disabledForegroundColor:
-                      Colors.white.withOpacity(0.28),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
+  Widget _buildBottomButton() {
+    return Positioned(
+      left: 20,
+      right: 20,
+      bottom: 12,
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 53,
+          child: _cooldownRemaining > Duration.zero
+              ? Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF302947),
                     borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF484064)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.lock_clock_rounded,
+                        size: 18,
+                        color: Color(0xFFA78BFA),
+                      ),
+                      const SizedBox(width: 9),
+                      Text(
+                        'Try again in ${_formatCooldown(_cooldownRemaining)}',
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ElevatedButton(
+                  onPressed: _isGenerating
+                      ? null
+                      : (_errorMessage != null ? _generateRoadmap : null),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF8B5CF6),
+                    disabledBackgroundColor: const Color(0xFF302947),
+                    foregroundColor: Colors.white,
+                    disabledForegroundColor: Colors.white.withOpacity(0.28),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _isGenerating
+                            ? 'Building your roadmap...'
+                            : 'Retry generation',
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        _isGenerating
+                            ? Icons.hourglass_empty_rounded
+                            : Icons.refresh_rounded,
+                        size: 18,
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _isGenerating
-                          ? 'Building your roadmap...'
-                          : 'Retry generation',
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      _isGenerating
-                          ? Icons.hourglass_empty_rounded
-                          : Icons.refresh_rounded,
-                      size: 18,
-                    ),
-                  ],
-                ),
-              ),
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class _RoadmapStep {

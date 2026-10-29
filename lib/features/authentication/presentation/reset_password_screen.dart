@@ -262,7 +262,7 @@ Future<void> _updatePassword() async {
 
     _showMessage('Password updated successfully.');
 
-    context.go('/sign-in');
+    context.go('/signin');
   } catch (error) {
     if (!mounted) return;
 

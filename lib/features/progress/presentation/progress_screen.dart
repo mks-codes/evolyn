@@ -10,6 +10,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:evolyn/app/router/route_names.dart';
 import 'package:evolyn/features/roadmap/providers/roadmap_cache_provider.dart';
+import 'package:showcaseview/showcaseview.dart';
+import 'package:evolyn/core/services/guided_tour_service.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key, this.isActive = true});
@@ -30,7 +32,20 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
   Timer? _ticker;
   // Tracks which completed tasks have their session history expanded.
-final Set<String> _expandedCompletedTaskKeys = <String>{};
+  final Set<String> _expandedCompletedTaskKeys = <String>{};
+  final GlobalKey _tourGoalOverviewKey = GlobalKey();
+  final GlobalKey _tourSummaryStatsKey = GlobalKey();
+  final GlobalKey _tourStudyTimeKey = GlobalKey();
+  final GlobalKey _tourMilestonesKey = GlobalKey();
+  final GlobalKey _tourCompletedTasksKey = GlobalKey();
+
+  bool _tourStartInProgress = false;
+  bool _tourStartedThisMount = false;
+  bool _tourAlreadySeenThisMount = false;
+  bool _tourAutoStartScheduled = false;
+
+  String? _tourStateUserId;
+
   @override
   void initState() {
     super.initState();
@@ -43,6 +58,116 @@ final Set<String> _expandedCompletedTaskKeys = <String>{};
   void dispose() {
     _ticker?.cancel();
     super.dispose();
+  }
+
+  void _scheduleProgressTour(String userId) {
+    if (!mounted ||
+        !widget.isActive ||
+        _tourAutoStartScheduled ||
+        _tourStartInProgress) {
+      return;
+    }
+
+    // Keep tour state separate if the authenticated user changes.
+    if (_tourStateUserId != userId) {
+      _tourStateUserId = userId;
+      _tourStartedThisMount = false;
+      _tourAlreadySeenThisMount = false;
+    }
+
+    if (_tourStartedThisMount || _tourAlreadySeenThisMount) {
+      return;
+    }
+
+    _tourAutoStartScheduled = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _tourAutoStartScheduled = false;
+
+      if (!mounted ||
+          !widget.isActive ||
+          Supabase.instance.client.auth.currentUser?.id != userId) {
+        return;
+      }
+
+      unawaited(_maybeStartProgressTour(userId));
+    });
+  }
+
+  Future<void> _maybeStartProgressTour(String userId) async {
+    if (!mounted ||
+        !widget.isActive ||
+        _tourStartInProgress ||
+        _tourStartedThisMount ||
+        _tourAlreadySeenThisMount) {
+      return;
+    }
+
+    _tourStartInProgress = true;
+
+    try {
+      if (Supabase.instance.client.auth.currentUser?.id != userId) {
+        return;
+      }
+
+      final hasSeen = await GuidedTourService.hasSeen(
+        userId: userId,
+        screenId: 'progress',
+      );
+
+      if (!mounted ||
+          !widget.isActive ||
+          Supabase.instance.client.auth.currentUser?.id != userId) {
+        return;
+      }
+
+      if (hasSeen) {
+        _tourAlreadySeenThisMount = true;
+        return;
+      }
+
+      // Let the dashboard finish laying out its Showcase targets.
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+
+      if (!mounted ||
+          !widget.isActive ||
+          Supabase.instance.client.auth.currentUser?.id != userId) {
+        return;
+      }
+
+      final targetKeys = <GlobalKey>[
+        _tourGoalOverviewKey,
+        _tourSummaryStatsKey,
+        _tourStudyTimeKey,
+        _tourMilestonesKey,
+        _tourCompletedTasksKey,
+      ];
+
+      // Do not mark the tour complete when a target is missing.
+      if (targetKeys.any((key) => key.currentContext == null)) {
+        return;
+      }
+
+      // Resolve ShowcaseView before saving completion, so a missing
+      // ShowCaseWidget ancestor does not incorrectly mark the tour complete.
+      final showcase = ShowCaseWidget.of(context);
+
+      await GuidedTourService.markSeen(userId: userId, screenId: 'progress');
+
+      if (!mounted ||
+          !widget.isActive ||
+          Supabase.instance.client.auth.currentUser?.id != userId) {
+        return;
+      }
+
+      _tourStartedThisMount = true;
+      showcase.startShowCase(targetKeys);
+    } catch (error, stackTrace) {
+      debugPrint('[ProgressScreen] Guided tour failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    } finally {
+      _tourStartInProgress = false;
+    }
   }
 
   bool _isMilestoneCompleted(Map<String, dynamic> milestone) {
@@ -109,6 +234,7 @@ final Set<String> _expandedCompletedTaskKeys = <String>{};
   Widget _buildProgressContext(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final userId = Supabase.instance.client.auth.currentUser?.id;
+
     if (userId == null) {
       return Scaffold(
         backgroundColor: _background,
@@ -124,6 +250,17 @@ final Set<String> _expandedCompletedTaskKeys = <String>{};
     }
 
     final dashboardAsync = ref.watch(progressDashboardProvider(userId));
+
+    // Start the guided tour when the dashboard is ready.
+    final loadedDashboard = dashboardAsync.asData?.value;
+
+    if (loadedDashboard != null && loadedDashboard.hasRoadmap) {
+      _scheduleProgressTour(userId);
+    }
+
+    if (loadedDashboard != null && loadedDashboard.hasRoadmap) {
+      _scheduleProgressTour(userId);
+    }
 
     return Scaffold(
       backgroundColor: _background,
@@ -159,30 +296,66 @@ final Set<String> _expandedCompletedTaskKeys = <String>{};
                   if (!dashboard.hasRoadmap) ...[
                     _buildNoRoadmap(),
                   ] else ...[
-                    _buildGoalOverview(context, dashboard),
+                    Showcase(
+                      key: _tourGoalOverviewKey,
+                      title: 'Your overall progress',
+                      description:
+                          'See your current roadmap, completion percentage, progress bar, '
+                          'and the total number of phases, tasks, and milestones.',
+                      child: _buildGoalOverview(context, dashboard),
+                    ),
                     const SizedBox(height: 16),
-                    _buildSummaryStats(context, dashboard),
+                    Showcase(
+                      key: _tourSummaryStatsKey,
+                      title: 'Progress at a glance',
+                      description:
+                          'These cards summarize completed tasks, estimated learning effort, '
+                          'and the milestones in your roadmap.',
+                      child: _buildSummaryStats(context, dashboard),
+                    ),
                     const SizedBox(height: 26),
                     _buildSectionTitle(
                       l10n.timeSpentTitle,
                       l10n.timeSpentSubtitle,
                     ),
                     const SizedBox(height: 13),
-                    _buildTaskTimeCard(context, dashboard),
+                    Showcase(
+                      key: _tourStudyTimeKey,
+                      title: 'Your study time and sessions',
+                      description:
+                          'Review your total tracked study time, task durations, active '
+                          'sessions, and saved session timelines. Completed tasks with '
+                          'saved sessions can be expanded to view their history.',
+                      child: _buildTaskTimeCard(context, dashboard),
+                    ),
                     const SizedBox(height: 27),
                     _buildSectionTitle(
                       l10n.roadmapMilestonesTitle,
                       l10n.roadmapMilestonesSubtitle,
                     ),
                     const SizedBox(height: 13),
-                    _buildMilestonesCard(context, dashboard),
+                    Showcase(
+                      key: _tourMilestonesKey,
+                      title: 'Roadmap milestones',
+                      description:
+                          'Review your milestones, their target weeks, and success criteria '
+                          'to understand the key outcomes in your learning plan.',
+                      child: _buildMilestonesCard(context, dashboard),
+                    ),
                     const SizedBox(height: 27),
                     _buildSectionTitle(
                       l10n.completedTasksTitle,
                       l10n.completedTasksSubtitle,
                     ),
                     const SizedBox(height: 13),
-                    _buildCompletedTasks(context, dashboard),
+                    Showcase(
+                      key: _tourCompletedTasksKey,
+                      title: 'Your completed tasks',
+                      description:
+                          'Review the tasks you have completed and their saved completion '
+                          'details. Keep using your roadmap to make progress toward your goals.',
+                      child: _buildCompletedTasks(context, dashboard),
+                    ),
                   ],
                   const SizedBox(height: 17),
                   _buildTrackingNote(context, dashboard),
@@ -762,19 +935,20 @@ final Set<String> _expandedCompletedTaskKeys = <String>{};
     }.contains(status);
     final hasActiveSession = _taskHasActiveSession(task);
     final currentSessionSeconds = _taskCurrentSessionSeconds(task);
-// Only completed tasks with saved sessions can be collapsed.
-final canCollapseSessions = completed && sessions.isNotEmpty;
-// Prefer a saved task ID; use task details as a fallback.
-final expansionKey = [
-  task['id'] ?? task['task_id'] ?? task['task_uuid'] ?? '',
-  task['phase_number'] ?? task['phase_title'] ?? '',
-  task['due_week'] ?? '',
-  task['title'] ?? task['task_title'] ?? '',
-].join('|');
+    // Only completed tasks with saved sessions can be collapsed.
+    final canCollapseSessions = completed && sessions.isNotEmpty;
+    // Prefer a saved task ID; use task details as a fallback.
+    final expansionKey = [
+      task['id'] ?? task['task_id'] ?? task['task_uuid'] ?? '',
+      task['phase_number'] ?? task['phase_title'] ?? '',
+      task['due_week'] ?? '',
+      task['title'] ?? task['task_title'] ?? '',
+    ].join('|');
 
-// Active and other non-completed tasks remain expanded as before.
-final sessionsExpanded = !canCollapseSessions ||
-    _expandedCompletedTaskKeys.contains(expansionKey);
+    // Active and other non-completed tasks remain expanded as before.
+    final sessionsExpanded =
+        !canCollapseSessions ||
+        _expandedCompletedTaskKeys.contains(expansionKey);
 
     final title = _stringValue(
       task['title'] ?? task['task_title'],
@@ -817,121 +991,121 @@ final sessionsExpanded = !canCollapseSessions ||
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-         Material(
-  color: Colors.transparent,
-  child: InkWell(
-    onTap: canCollapseSessions
-        ? () {
-            setState(() {
-              if (sessionsExpanded) {
-                _expandedCompletedTaskKeys.remove(expansionKey);
-              } else {
-                _expandedCompletedTaskKeys.add(expansionKey);
-              }
-            });
-          }
-        : null,
-    borderRadius: BorderRadius.circular(10),
-    child: Padding(
-      padding: canCollapseSessions
-          ? const EdgeInsets.symmetric(vertical: 3)
-          : EdgeInsets.zero,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 37,
-            height: 37,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: Icon(
-              completed
-                  ? Icons.task_alt_rounded
-                  : inProgress
-                      ? Icons.play_circle_outline_rounded
-                      : Icons.timer_outlined,
-              color: color,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    height: 1.35,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  phaseTitle,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.43),
-                    fontSize: 9,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  statusLabel,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                hasAnySavedTime
-                    ? _formatTaskDuration(totalSeconds)
-                    : l10n.noTime,
-                style: TextStyle(
-                  color: hasAnySavedTime ? color : Colors.white38,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: canCollapseSessions
+                  ? () {
+                      setState(() {
+                        if (sessionsExpanded) {
+                          _expandedCompletedTaskKeys.remove(expansionKey);
+                        } else {
+                          _expandedCompletedTaskKeys.add(expansionKey);
+                        }
+                      });
+                    }
+                  : null,
+              borderRadius: BorderRadius.circular(10),
+              child: Padding(
+                padding: canCollapseSessions
+                    ? const EdgeInsets.symmetric(vertical: 3)
+                    : EdgeInsets.zero,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 37,
+                      height: 37,
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                      child: Icon(
+                        completed
+                            ? Icons.task_alt_rounded
+                            : inProgress
+                            ? Icons.play_circle_outline_rounded
+                            : Icons.timer_outlined,
+                        color: color,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 11),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              height: 1.35,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            phaseTitle,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.43),
+                              fontSize: 9,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            statusLabel,
+                            style: TextStyle(
+                              color: color,
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.35,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          hasAnySavedTime
+                              ? _formatTaskDuration(totalSeconds)
+                              : l10n.noTime,
+                          style: TextStyle(
+                            color: hasAnySavedTime ? color : Colors.white38,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          l10n.taskTotal,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.38),
+                            fontSize: 7.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (canCollapseSessions) ...[
+                      const SizedBox(width: 5),
+                      Icon(
+                        sessionsExpanded
+                            ? Icons.expand_less_rounded
+                            : Icons.expand_more_rounded,
+                        color: Colors.white.withOpacity(0.48),
+                        size: 18,
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                l10n.taskTotal,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.38),
-                  fontSize: 7.5,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.4,
-                ),
-              ),
-            ],
-          ),
-          if (canCollapseSessions) ...[
-            const SizedBox(width: 5),
-            Icon(
-              sessionsExpanded
-                  ? Icons.expand_less_rounded
-                  : Icons.expand_more_rounded,
-              color: Colors.white.withOpacity(0.48),
-              size: 18,
             ),
-          ],
-        ],
-      ),
-    ),
-  ),
-),
+          ),
           const SizedBox(height: 12),
 
           if (hasActiveSession) ...[

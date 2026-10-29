@@ -42,6 +42,24 @@ String _friendlyAuthError(Object? error) {
     return patterns.any((pattern) => errorText.contains(pattern));
   }
 
+
+
+  // Request took too long or the connection is too slow.
+  if (containsAny([
+    'timeoutexception',
+    'timeout exception',
+    'request timed out',
+    'request timeout',
+    'connection timed out',
+    'connection timeout',
+    'deadline exceeded',
+    'future not completed',
+  ])) {
+    return 'Your internet connection seems slow. '
+        'Please check your connection and try again.';
+  }
+
+
   // Network and internet connection errors.
   if (containsAny([
     'network-request-failed',

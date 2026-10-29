@@ -8,6 +8,8 @@ import 'package:evolyn/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:showcaseview/showcaseview.dart';
+import 'package:evolyn/core/services/guided_tour_service.dart';
 
 class RoadmapScreen extends ConsumerStatefulWidget {
   const RoadmapScreen({
@@ -52,6 +54,18 @@ class _RoadmapScreenState extends ConsumerState<RoadmapScreen> {
   final Set<int> _expandedPhases = {0};
   final ScrollController _roadmapScrollController = ScrollController();
   final GlobalKey _activeTaskScrollKey = GlobalKey();
+  final GlobalKey _tourHeroKey = GlobalKey();
+final GlobalKey _tourStatsKey = GlobalKey();
+final GlobalKey _tourTimelineKey = GlobalKey();
+final GlobalKey _tourPlanningKey = GlobalKey();
+final GlobalKey _tourEditKey = GlobalKey();
+
+bool _tourStartInProgress = false;
+bool _tourStartedThisMount = false;
+bool _tourAlreadySeenThisMount = false;
+bool _tourAutoStartScheduled = false;
+
+String? _tourStateUserId;
 
   bool _isEditing = false;
   bool _hasUnsavedChanges = false;
@@ -99,15 +113,174 @@ class _RoadmapScreenState extends ConsumerState<RoadmapScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !widget.isActive) return;
       _openAndCenterActiveTask();
-      _refreshRoadmap();
+      unawaited(_refreshAndScheduleRoadmapTour());
     });
   }
 
-  @override
-  void didUpdateWidget(covariant RoadmapScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!oldWidget.isActive && widget.isActive) _refreshRoadmap();
+@override
+void didUpdateWidget(covariant RoadmapScreen oldWidget) {
+  super.didUpdateWidget(oldWidget);
+
+  if (!oldWidget.isActive && widget.isActive) {
+    _openAndCenterActiveTask();
+    unawaited(_refreshAndScheduleRoadmapTour());
   }
+}
+
+Future<void> _refreshAndScheduleRoadmapTour() async {
+  await _refreshRoadmap();
+
+  if (!mounted || !widget.isActive || !_hasRoadmap) return;
+
+  _scheduleRoadmapTour();
+}
+
+void _scheduleRoadmapTour() {
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+
+  if (userId == null ||
+      !mounted ||
+      !widget.isActive ||
+      _tourAutoStartScheduled ||
+      _tourStartInProgress) {
+    return;
+  }
+
+  // Track tour state separately for each signed-in user.
+  if (_tourStateUserId != userId) {
+    _tourStateUserId = userId;
+    _tourStartedThisMount = false;
+    _tourAlreadySeenThisMount = false;
+  }
+
+  if (_tourStartedThisMount || _tourAlreadySeenThisMount) return;
+
+  _tourAutoStartScheduled = true;
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _tourAutoStartScheduled = false;
+
+    if (!mounted ||
+        !widget.isActive ||
+        Supabase.instance.client.auth.currentUser?.id != userId) {
+      return;
+    }
+
+    unawaited(_maybeStartRoadmapTour(userId));
+  });
+}
+
+Future<void> _maybeStartRoadmapTour(String userId) async {
+  if (!mounted ||
+      !widget.isActive ||
+      _tourStartInProgress ||
+      _tourStartedThisMount ||
+      _tourAlreadySeenThisMount) {
+    return;
+  }
+
+  _tourStartInProgress = true;
+
+  try {
+    if (Supabase.instance.client.auth.currentUser?.id != userId) {
+      return;
+    }
+
+    final hasSeen = await GuidedTourService.hasSeen(
+      userId: userId,
+      screenId: 'roadmap',
+    );
+
+    if (!mounted ||
+        !widget.isActive ||
+        Supabase.instance.client.auth.currentUser?.id != userId) {
+      return;
+    }
+
+    if (hasSeen) {
+      _tourAlreadySeenThisMount = true;
+      return;
+    }
+
+    // Allow the refreshed roadmap and showcase targets to finish layout.
+    await Future<void>.delayed(
+      const Duration(milliseconds: 350),
+    );
+
+    if (!mounted ||
+        !widget.isActive ||
+        Supabase.instance.client.auth.currentUser?.id != userId ||
+        !_hasRoadmap) {
+      return;
+    }
+
+    final targetKeys = <GlobalKey>[
+      _tourHeroKey,
+      _tourStatsKey,
+      _tourTimelineKey,
+    ];
+
+    // Weekly planning and progress tracking may be absent from some roadmaps.
+    // Include that step only when at least one section contains data.
+    final hasWeeklyRhythm = _asMap(_roadmap['weekly_rhythm']).isNotEmpty;
+    final hasProgressTracking =
+        _asMap(_roadmap['progress_tracking']).isNotEmpty;
+
+    if (hasWeeklyRhythm || hasProgressTracking) {
+      targetKeys.add(_tourPlanningKey);
+    }
+
+    targetKeys.add(_tourEditKey);
+
+    // Do not start until all required Showcase targets are mounted.
+    if (targetKeys.any((key) => key.currentContext == null)) {
+      return;
+    }
+
+    // Start at the top of the roadmap. This avoids leaving the first
+    // step offscreen after active-task auto-centering.
+    final heroContext = _tourHeroKey.currentContext;
+    if (heroContext == null) return;
+
+    await Scrollable.ensureVisible(
+      heroContext,
+      alignment: 0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOutCubic,
+    );
+
+    if (!mounted ||
+        !widget.isActive ||
+        Supabase.instance.client.auth.currentUser?.id != userId) {
+      return;
+    }
+
+    if (targetKeys.any((key) => key.currentContext == null)) {
+      return;
+    }
+
+    // Persist completion so rebuilds don't automatically reopen the tour.
+    await GuidedTourService.markSeen(
+      userId: userId,
+      screenId: 'roadmap',
+    );
+
+    if (!mounted ||
+        !widget.isActive ||
+        Supabase.instance.client.auth.currentUser?.id != userId) {
+      return;
+    }
+
+    _tourStartedThisMount = true;
+
+    ShowCaseWidget.of(context).startShowCase(targetKeys);
+  } catch (error, stackTrace) {
+    debugPrint('[RoadmapScreen] Guided tour failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  } finally {
+    _tourStartInProgress = false;
+  }
+}
 
   Map<String, int>? _findActiveTaskLocation() {
     Map<String, int>? firstInProgress;
@@ -483,15 +656,25 @@ class _RoadmapScreenState extends ConsumerState<RoadmapScreen> {
         title: Text(l10n.roadmapScreenTitle, style: const TextStyle(fontWeight: FontWeight.w700)),
         actions: [
           if (!_isEditing)
-            IconButton(
-              tooltip: l10n.editRoadmap,
-              onPressed: _isSaving ? null : () => setState(() {
+  Showcase(
+    key: _tourEditKey,
+    title: 'Customize your roadmap',
+    description:
+        'Tap the edit icon to customize roadmap details, phase objectives, '
+        'task descriptions, and schedules. Save or cancel your changes '
+        'using the actions that appear at the bottom.',
+    child: IconButton(
+      tooltip: l10n.editRoadmap,
+      onPressed: _isSaving
+          ? null
+          : () => setState(() {
                 _isEditing = true;
                 _hasUnsavedChanges = false;
                 _saveError = null;
               }),
-              icon: const Icon(Icons.edit_outlined, color: _purple),
-            ),
+      icon: const Icon(Icons.edit_outlined, color: _purple),
+    ),
+  ),
           const SizedBox(width: 6),
         ],
       ),
@@ -517,19 +700,63 @@ class _RoadmapScreenState extends ConsumerState<RoadmapScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildHero(),
+                    Showcase(
+  key: _tourHeroKey,
+  title: 'Your personalized roadmap',
+  description:
+      'This is your learning plan. Review the roadmap overview, '
+      'career focus, planning horizon, and overall completion progress.',
+  child: _buildHero(),
+),
                     const SizedBox(height: 14),
-                    _buildStats(),
+                    Showcase(
+  key: _tourStatsKey,
+  title: 'Roadmap at a glance',
+  description:
+      'These summary cards show how many phases, milestones, and tasks '
+      'your roadmap contains.',
+  child: _buildStats(),
+),
                     const SizedBox(height: 22),
                     _sectionTitle(l10n.yourTimeline, l10n.phaseCount(_phases.length)),
                     const SizedBox(height: 10),
-                    ...List.generate(_phases.length, (index) => _buildPhaseCard(index, _phases[index])),
+                    ...List.generate(_phases.length, (index) {
+  final phaseCard = _buildPhaseCard(index, _phases[index]);
+
+  // Highlight the first phase to explain how the timeline works.
+  if (index == 0) {
+    return Showcase(
+      key: _tourTimelineKey,
+      title: 'Explore your learning timeline',
+      description:
+          'Your roadmap is divided into phases. Expand a phase to '
+          'explore its objectives, outcomes, milestones, tasks, '
+          'deliverables, and success criteria.',
+      child: phaseCard,
+    );
+  }
+
+  return phaseCard;
+}),
                     const SizedBox(height: 12),
-                    _buildWeeklyRhythm(),
-                    const SizedBox(height: 12),
-                    _buildProgressTracking(),
-                    const SizedBox(height: 12),
-                    _buildRisks(),
+                    Showcase(
+  key: _tourPlanningKey,
+  title: 'Plan your weekly learning',
+  description:
+      'Review your suggested weekly schedule and available study hours. '
+      'The progress-tracking section below helps you review metrics '
+      'and identify your next action.',
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _buildWeeklyRhythm(),
+      const SizedBox(height: 12),
+      _buildProgressTracking(),
+    ],
+  ),
+),
+const SizedBox(height: 12),
+_buildRisks(),
                     const SizedBox(height: 12),
                     _buildAssumptions(),
                     const SizedBox(height: 16),

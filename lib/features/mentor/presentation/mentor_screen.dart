@@ -11,11 +11,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// AARYA mentor chat.
-///
-/// Conversations and messages are stored in Supabase. Recent messages and the
-/// active conversation ID are cached locally so the conversation can appear
-/// immediately on re-open. Realtime keeps this screen current across devices.
+
 class MentorScreen extends ConsumerStatefulWidget {
   const MentorScreen({super.key});
 

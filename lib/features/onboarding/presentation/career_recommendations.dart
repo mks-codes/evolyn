@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 /// Displays AI-generated career options passed through GoRouter's extra.
 ///
 /// The complete AI response remains in memory until the user selects up to
@@ -182,207 +183,206 @@ class _CareerRecommendationsScreenState
   // SAVE SELECTED CAREERS AND OPEN ROADMAP GENERATION
   // ---------------------------------------------------------------------------
 
-Future<void> _generateRoadmap() async {
-  if (_isWorking) return;
+  Future<void> _generateRoadmap() async {
+    if (_isWorking) return;
 
-  final selected = _selectedCareers;
+    final selected = _selectedCareers;
 
-  if (selected.isEmpty) {
-    setState(() {
-      _errorMessage = 'Select at least one career to continue.';
-    });
-    return;
-  }
-
-  if (selected.length > _maxSelections) {
-    setState(() {
-      _errorMessage = 'You can select a maximum of $_maxSelections careers.';
-    });
-    return;
-  }
-
-  final requestId = _effectiveRequestId(selected);
-
-  setState(() {
-    _isWorking = true;
-    _errorMessage = null;
-  });
-
-  try {
-    // Ask for the roadmap language before navigating to roadmap generation.
-    final roadmapLanguage = await _chooseRoadmapLanguage();
-
-    // The user cancelled the dialog; do not save or navigate.
-    if (roadmapLanguage == null) return;
-
-    // Save the chosen language in the signed-in user's profile first.
-    await _saveRoadmapLanguage(roadmapLanguage);
-
-    if (!mounted) return;
-
-    await context.pushNamed(
-      RouteNames.roadmapGeneration,
-      extra: <String, dynamic>{
-        'requestId': requestId,
-        'selectedCareers': selected
-            .map((career) => Map<String, dynamic>.from(career))
-            .toList(),
-        'roadmapLanguage': roadmapLanguage,
-      },
-    );
-  } catch (error, stackTrace) {
-    debugPrint('[career-recommendations] Roadmap navigation/save error: $error');
-    debugPrintStack(stackTrace: stackTrace);
-
-    if (mounted) {
+    if (selected.isEmpty) {
       setState(() {
-        _errorMessage = error is AuthException
-            ? error.message
-            : 'Could not save your roadmap language or open roadmap generation. Please try again.';
+        _errorMessage = 'Select at least one career to continue.';
       });
+      return;
     }
-  } finally {
-    if (mounted) {
+
+    if (selected.length > _maxSelections) {
       setState(() {
-        _isWorking = false;
+        _errorMessage = 'You can select a maximum of $_maxSelections careers.';
       });
+      return;
+    }
+
+    final requestId = _effectiveRequestId(selected);
+
+    setState(() {
+      _isWorking = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Ask for the roadmap language before navigating to roadmap generation.
+      final roadmapLanguage = await _chooseRoadmapLanguage();
+
+      // The user cancelled the dialog; do not save or navigate.
+      if (roadmapLanguage == null) return;
+
+      // Save the chosen language in the signed-in user's profile first.
+      await _saveRoadmapLanguage(roadmapLanguage);
+
+      if (!mounted) return;
+
+      await context.pushNamed(
+        RouteNames.roadmapGeneration,
+        extra: <String, dynamic>{
+          'requestId': requestId,
+          'selectedCareers': selected
+              .map((career) => Map<String, dynamic>.from(career))
+              .toList(),
+        },
+      );
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[career-recommendations] Roadmap navigation/save error: $error',
+      );
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (mounted) {
+        setState(() {
+          _errorMessage = error is AuthException
+              ? error.message
+              : 'Could not save your roadmap language or open roadmap generation. Please try again.';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isWorking = false;
+        });
+      }
     }
   }
-}
 
-Future<String?> _chooseRoadmapLanguage() {
-  // English is the initial selection, but the user can choose any of the three.
-  String selectedLanguage = 'en';
+  Future<String?> _chooseRoadmapLanguage() {
+    // English is the initial selection, but the user can choose any of the three.
+    String selectedLanguage = 'en';
 
-  return showDialog<String>(
-    context: context,
-    barrierDismissible: true,
-    builder: (dialogContext) => StatefulBuilder(
-      builder: (dialogContext, setDialogState) => AlertDialog(
-        backgroundColor: _cardColor,
-        title: const Text(
-          'Choose roadmap language',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          backgroundColor: _cardColor,
+          title: const Text(
+            'Choose roadmap language',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
           ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Which language would you like your roadmap generated in?',
-              style: TextStyle(color: Colors.white70, height: 1.4),
-            ),
-            const SizedBox(height: 12),
-            RadioListTile<String>(
-              contentPadding: EdgeInsets.zero,
-              activeColor: _accentLightColor,
-              value: 'en',
-              groupValue: selectedLanguage,
-              title: const Text(
-                'English',
-                style: TextStyle(color: Colors.white),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Which language would you like your roadmap generated in?',
+                style: TextStyle(color: Colors.white70, height: 1.4),
               ),
-              onChanged: (value) {
-                if (value == null) return;
-                setDialogState(() => selectedLanguage = value);
-              },
-            ),
-            RadioListTile<String>(
-              contentPadding: EdgeInsets.zero,
-              activeColor: _accentLightColor,
-              value: 'hi',
-              groupValue: selectedLanguage,
-              title: const Text(
-                'हिन्दी (Hindi)',
-                style: TextStyle(color: Colors.white),
+              const SizedBox(height: 12),
+              RadioListTile<String>(
+                contentPadding: EdgeInsets.zero,
+                activeColor: _accentLightColor,
+                value: 'en',
+                groupValue: selectedLanguage,
+                title: const Text(
+                  'English',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setDialogState(() => selectedLanguage = value);
+                },
               ),
-              onChanged: (value) {
-                if (value == null) return;
-                setDialogState(() => selectedLanguage = value);
-              },
-            ),
-            RadioListTile<String>(
-              contentPadding: EdgeInsets.zero,
-              activeColor: _accentLightColor,
-              value: 'mr',
-              groupValue: selectedLanguage,
-              title: const Text(
-                'मराठी (Marathi)',
-                style: TextStyle(color: Colors.white),
+              RadioListTile<String>(
+                contentPadding: EdgeInsets.zero,
+                activeColor: _accentLightColor,
+                value: 'hi',
+                groupValue: selectedLanguage,
+                title: const Text(
+                  'हिन्दी (Hindi)',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setDialogState(() => selectedLanguage = value);
+                },
               ),
-              onChanged: (value) {
-                if (value == null) return;
-                setDialogState(() => selectedLanguage = value);
-              },
+              RadioListTile<String>(
+                contentPadding: EdgeInsets.zero,
+                activeColor: _accentLightColor,
+                value: 'mr',
+                groupValue: selectedLanguage,
+                title: const Text(
+                  'मराठी (Marathi)',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setDialogState(() => selectedLanguage = value);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: _accentColor,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(selectedLanguage),
+              child: const Text('Continue'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white70),
-            ),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: _accentColor,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () => Navigator.of(dialogContext).pop(selectedLanguage),
-            child: const Text('Continue'),
-          ),
-        ],
       ),
-    ),
-  );
-}
-
-Future<void> _saveRoadmapLanguage(String language) async {
-  final supabase = Supabase.instance.client;
-  final user = supabase.auth.currentUser;
-
-  if (user == null) {
-    throw const AuthException('Please sign in to continue.');
+    );
   }
 
-  // Match LanguageSelectionPage: read the existing JSON, merge the new value,
-  // and upsert without discarding the user's other onboarding answers.
-  final row = await supabase
-      .from('profiles')
-      .select('onboarding_data')
-      .eq('id', user.id)
-      .maybeSingle();
+  Future<void> _saveRoadmapLanguage(String language) async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
 
-  final onboarding = <String, dynamic>{};
-  final existingData = row?['onboarding_data'];
+    if (user == null) {
+      throw const AuthException('Please sign in to continue.');
+    }
 
-  if (existingData is Map) {
-    onboarding.addAll(Map<String, dynamic>.from(existingData));
+    // Match LanguageSelectionPage: read the existing JSON, merge the new value,
+    // and upsert without discarding the user's other onboarding answers.
+    final row = await supabase
+        .from('profiles')
+        .select('onboarding_data')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    final onboarding = <String, dynamic>{};
+    final existingData = row?['onboarding_data'];
+
+    if (existingData is Map) {
+      onboarding.addAll(Map<String, dynamic>.from(existingData));
+    }
+
+    final career = <String, dynamic>{};
+    final existingCareer = onboarding['career_onboarding'];
+
+    if (existingCareer is Map) {
+      career.addAll(Map<String, dynamic>.from(existingCareer));
+    }
+
+    // Do not overwrite career_onboarding.language; that is the questionnaire language.
+    career['roadmap_language'] = language;
+    onboarding['career_onboarding'] = career;
+
+    await supabase.from('profiles').upsert({
+      'id': user.id,
+      'onboarding_data': onboarding,
+    });
+
+    debugPrint('[ROADMAP LANGUAGE] Saved language code: $language');
   }
-
-  final career = <String, dynamic>{};
-  final existingCareer = onboarding['career_onboarding'];
-
-  if (existingCareer is Map) {
-    career.addAll(Map<String, dynamic>.from(existingCareer));
-  }
-
-  // Do not overwrite career_onboarding.language; that is the questionnaire language.
-  career['roadmap_language'] = language;
-  onboarding['career_onboarding'] = career;
-
-  await supabase.from('profiles').upsert({
-    'id': user.id,
-    'onboarding_data': onboarding,
-  });
-
-  debugPrint('[ROADMAP LANGUAGE] Saved language code: $language');
-}
 
   // ---------------------------------------------------------------------------
   // MAIN UI
@@ -423,7 +423,7 @@ Future<void> _saveRoadmapLanguage(String language) async {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Choose up to 1 careers',
+            'Choose 1 careers',
             style: theme.textTheme.titleLarge?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w700,
@@ -547,8 +547,7 @@ Future<void> _saveRoadmapLanguage(String language) async {
               padding: const EdgeInsets.only(top: 5),
               child: Text(
                 'Rank ${career['rank'] ?? '—'} · '
-                '${_scoreOf(career)}% match · '
-                '${career['match_level'] ?? 'Match level unavailable'}\n'
+                '${_scoreOf(career)}% match\n'
                 '${career['career_category'] ?? ''}\n'
                 '${career['match_summary'] ?? ''}',
                 style: const TextStyle(color: Colors.white70, height: 1.45),
@@ -577,11 +576,6 @@ Future<void> _saveRoadmapLanguage(String language) async {
               children: [
                 _detail('Typical work', career['typical_work']),
                 _detail('Why it matches', career['why_it_matches']),
-                _detail('Supporting evidence', career['supporting_evidence']),
-                _detail(
-                  'Existing skill alignment',
-                  career['existing_skill_alignment'],
-                ),
                 _detail('Skills to develop', career['skills_to_develop']),
                 _detail('Entry requirements', career['entry_requirements']),
                 _detail(

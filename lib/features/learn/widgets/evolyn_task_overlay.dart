@@ -5,7 +5,6 @@ import 'package:android_intent_plus/android_intent.dart';
 import 'package:android_intent_plus/flag.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
-
 class EvolynTaskOverlay extends StatefulWidget {
   const EvolynTaskOverlay({super.key});
 

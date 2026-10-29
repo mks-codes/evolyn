@@ -6,8 +6,9 @@ import 'package:evolyn/providers/app_locale_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
-
+import 'package:showcaseview/showcaseview.dart';
 import 'router/app_router.dart';
+import 'router/route_names.dart';
 
 class EvolynApp extends ConsumerStatefulWidget {
   const EvolynApp({super.key});
@@ -24,17 +25,24 @@ class _EvolynAppState extends ConsumerState<EvolynApp> {
   void initState() {
     super.initState();
 
-    // Listen for Supabase authentication events.
     _authSubscription = supabase
         .Supabase.instance.client.auth.onAuthStateChange
         .listen(
-      (data) {
-        if (!mounted) return;
+      (authState) {
+        debugPrint(
+          'Supabase auth event: ${authState.event}',
+        );
 
-        // Navigate to the in-app password reset screen.
-        if (data.event ==
+        if (authState.event ==
             supabase.AuthChangeEvent.passwordRecovery) {
-          ref.read(appRouterProvider).go('/reset-password');
+          // Wait until the current frame has completed before navigating.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+
+            ref
+                .read(appRouterProvider)
+                .goNamed(RouteNames.resetPassword);
+          });
         }
       },
       onError: (Object error, StackTrace stackTrace) {
@@ -62,10 +70,22 @@ class _EvolynAppState extends ConsumerState<EvolynApp> {
       localizationsDelegates:
           AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+
+            builder: (context, child) {
+        return ShowCaseWidget(
+          enableAutoScroll: true,
+          disableBarrierInteraction: true,
+          builder: (showcaseContext) {
+            return child ?? const SizedBox.shrink();
+          },
+        );
+      },
+      
       theme: ThemeData(
         brightness: Brightness.dark,
         useMaterial3: true,
       ),
+      
     );
   }
 }

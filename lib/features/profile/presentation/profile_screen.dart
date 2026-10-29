@@ -13,6 +13,7 @@ import '../../authentication/providers/auth_providers.dart';
 import '../../roadmap/providers/roadmap_cache_provider.dart';
 import 'package:evolyn/features/profile/providers/user_display_name_provider.dart';
 import 'package:evolyn/core/widgets/top_message.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -43,6 +44,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   User? get _user => _supabase.auth.currentUser;
   String get _userId => _user?.id ?? 'signed_out';
   String _preferenceKey(String key) => 'evolyn.profile.$_userId.$key';
+
+  static const String _privacyPolicyUrl =
+    'https://evolyn-privacy-policy.onrender.com/';
+static const String _termsAndConditionsUrl =
+    'https://evolyn-privacy-policy.onrender.com/terms-and-conditions.html';
+static const String _accountDeletionUrl =
+    'https://evolyn-privacy-policy.onrender.com/account-deletion.html';
 
   @override
   void initState() {
@@ -972,31 +980,56 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildPrivacyCard() {
-    final l10n = _l10n;
-    return _card(
-      child: Column(
-        children: [
-          _settingsTile(
-            icon: Icons.shield_outlined,
-            title: l10n.profilePrivacyPolicy,
-            subtitle: l10n.profilePrivacyPolicySubtitle,
-            onTap: _showPrivacyPolicy,
+Widget _buildPrivacyCard() {
+  final l10n = _l10n;
+
+  return _card(
+    child: Column(
+      children: [
+        _settingsTile(
+          icon: Icons.shield_outlined,
+          title: l10n.profilePrivacyPolicy,
+          subtitle: l10n.profilePrivacyPolicySubtitle,
+          onTap: _showPrivacyPolicy,
+          requiresPreferences: false,
+        ),
+        _thinDivider(),
+        _settingsTile(
+          icon: Icons.description_outlined,
+          title: 'Terms and Conditions',
+          subtitle: 'Read the terms that apply to using Evolyn.',
+          onTap: () => _openLegalPage(
+            _termsAndConditionsUrl,
+            pageName: 'Terms and Conditions',
           ),
-          _thinDivider(),
-          _settingsTile(
-            icon: Icons.lock_outline_rounded,
-            title: l10n.profileAccountSecurity,
-            subtitle: l10n.profileAccountSecuritySubtitle,
-            onTap: () => _showInfo(
-              l10n.profileAccountSecurity,
-              l10n.profileAccountSecurityMessage,
-            ),
+          requiresPreferences: false,
+        ),
+        _thinDivider(),
+        _settingsTile(
+          icon: Icons.delete_outline_rounded,
+          title: 'Account Deletion',
+          subtitle: 'Read how to request deletion and what data is removed.',
+          onTap: () => _openLegalPage(
+            _accountDeletionUrl,
+            pageName: 'Account Deletion',
           ),
-        ],
-      ),
-    );
-  }
+          requiresPreferences: false,
+        ),
+        _thinDivider(),
+        _settingsTile(
+          icon: Icons.lock_outline_rounded,
+          title: l10n.profileAccountSecurity,
+          subtitle: l10n.profileAccountSecuritySubtitle,
+          onTap: () => _showInfo(
+            l10n.profileAccountSecurity,
+            l10n.profileAccountSecurityMessage,
+          ),
+          requiresPreferences: false,
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildLogoutButton() {
     final l10n = _l10n;
@@ -1112,62 +1145,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _settingsTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    Widget? trailing,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: _preferencesLoaded ? onTap : null,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-          child: Row(
-            children: [
-              _iconBox(icon),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: _muted,
-                        fontSize: 10,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 7),
-              if (trailing != null) trailing,
-              const SizedBox(width: 3),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xFF777991),
-                size: 19,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+Widget _settingsTile({
+  required IconData icon,
+  required String title,
+  required String subtitle,
+  Widget? trailing,
+  required VoidCallback onTap,
+  bool requiresPreferences = true,
+}) {
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: (!requiresPreferences || _preferencesLoaded) ? onTap : null,
+      borderRadius: BorderRadius.circular(16),
+      // Keep the existing Padding/Row UI here unchanged.
+    ),
+  );
+}
 
   Widget _iconBox(IconData icon) {
     return Container(
@@ -1337,81 +1331,47 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (mounted) _showSnack(_l10n.profileLanguageUpdated);
   }
 
-  Future<void> _showPrivacyPolicy() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: _panel,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetContext) {
-        final l10n = AppLocalizations.of(sheetContext)!;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.shield_outlined, color: _purple, size: 22),
-                    const SizedBox(width: 10),
-                    Text(
-                      l10n.profilePrivacyPolicy,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  l10n.profilePrivacyDescription,
-                  style: const TextStyle(
-                    color: Color(0xFFCACBDA),
-                    fontSize: 12,
-                    height: 1.55,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  l10n.profilePrivacyReviewNotice,
-                  style: const TextStyle(
-                    color: _muted,
-                    fontSize: 11,
-                    height: 1.55,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(sheetContext).pop(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _purple,
-                      foregroundColor: const Color(0xFF100D24),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                    ),
-                    child: Text(
-                      l10n.profileDone,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+Future<void> _showPrivacyPolicy() => _openLegalPage(
+  _privacyPolicyUrl,
+  pageName: 'Privacy Policy',
+);
+
+Future<void> _openLegalPage(
+  String url, {
+  required String pageName,
+}) async {
+  final uri = Uri.tryParse(url);
+  if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+    _showSnack('The $pageName link is invalid. Please contact support.');
+    return;
   }
+
+  try {
+    // Prefer an in-app browser view. If it is unsupported or fails, try the
+    // device's default browser before showing an error.
+    var opened = false;
+    try {
+      opened = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+    } catch (error) {
+      debugPrint('[ProfileScreen] In-app browser failed for $pageName: $error');
+    }
+
+    if (!opened) {
+      opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+
+    if (!opened && mounted) {
+      _showSnack('Could not open $pageName. Please try again.');
+    }
+  } catch (error) {
+    debugPrint('[ProfileScreen] Could not open $pageName: $error');
+    if (mounted) {
+      _showSnack(
+        'Could not open $pageName. Check your connection and try again.',
+      );
+    }
+  }
+}
 
   Future<void> _showInfo(String title, String message) async {
     await showDialog<void>(

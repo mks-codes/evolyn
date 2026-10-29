@@ -10,18 +10,139 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:evolyn/features/profile/providers/user_display_name_provider.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-class HomeTab extends ConsumerWidget {
+import 'package:showcaseview/showcaseview.dart';
+import 'package:evolyn/core/services/guided_tour_service.dart';
+import 'dart:async';
+
+class HomeTab extends ConsumerStatefulWidget {
   const HomeTab({super.key, this.isActive = true});
 
   final bool isActive;
+  @override
+  ConsumerState<HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends ConsumerState<HomeTab> {
+  final GlobalKey _tourProfileKey = GlobalKey();
+  final GlobalKey _tourRoadmapKey = GlobalKey();
+  final GlobalKey _tourTasksKey = GlobalKey();
+
+  bool _tourStartInProgress = false;
+  bool _tourStartedThisMount = false;
+  bool _tourAlreadySeenThisMount = false;
+  bool _tourAutoStartScheduled = false;
+  String? _tourStateUserId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return PageAutoRefresh(
-      isActive: isActive,
+      isActive: widget.isActive,
       onRefresh: () async => ref.invalidate(homeDashboardProvider),
       child: _buildHomeContent(context, ref),
     );
+  }
+
+  void _scheduleHomeTour(String userId) {
+    if (!mounted ||
+        !widget.isActive ||
+        _tourAutoStartScheduled ||
+        _tourStartInProgress) {
+      return;
+    }
+
+    if (_tourStateUserId != userId) {
+      _tourStateUserId = userId;
+      _tourStartedThisMount = false;
+      _tourAlreadySeenThisMount = false;
+    }
+
+    if (_tourStartedThisMount || _tourAlreadySeenThisMount) {
+      return;
+    }
+
+    _tourAutoStartScheduled = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _tourAutoStartScheduled = false;
+
+      if (!mounted ||
+          !widget.isActive ||
+          Supabase.instance.client.auth.currentUser?.id != userId) {
+        return;
+      }
+
+      unawaited(_maybeStartHomeTour(userId));
+    });
+  }
+
+  Future<void> _maybeStartHomeTour(String userId) async {
+    if (!mounted ||
+        !widget.isActive ||
+        _tourStartInProgress ||
+        _tourStartedThisMount ||
+        _tourAlreadySeenThisMount) {
+      return;
+    }
+
+    _tourStartInProgress = true;
+
+    try {
+      if (Supabase.instance.client.auth.currentUser?.id != userId) {
+        return;
+      }
+
+      final hasSeen = await GuidedTourService.hasSeen(
+        userId: userId,
+        screenId: 'home',
+      );
+
+      if (!mounted ||
+          !widget.isActive ||
+          Supabase.instance.client.auth.currentUser?.id != userId) {
+        return;
+      }
+
+      if (hasSeen) {
+        _tourAlreadySeenThisMount = true;
+        return;
+      }
+
+      // Allow the dashboard and Showcase targets to finish laying out.
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+
+      if (!mounted ||
+          !widget.isActive ||
+          Supabase.instance.client.auth.currentUser?.id != userId) {
+        return;
+      }
+
+      final targetKeys = <GlobalKey>[
+        _tourProfileKey,
+        _tourRoadmapKey,
+        _tourTasksKey,
+      ];
+
+      if (targetKeys.any((key) => key.currentContext == null)) {
+        return;
+      }
+
+      await GuidedTourService.markSeen(userId: userId, screenId: 'home');
+
+      if (!mounted ||
+          !widget.isActive ||
+          Supabase.instance.client.auth.currentUser?.id != userId) {
+        return;
+      }
+
+      _tourStartedThisMount = true;
+
+      ShowCaseWidget.of(context).startShowCase(targetKeys);
+    } catch (error, stackTrace) {
+      debugPrint('Home guided tour failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    } finally {
+      _tourStartInProgress = false;
+    }
   }
 
   Widget _buildHomeContent(BuildContext context, WidgetRef ref) {
@@ -37,41 +158,63 @@ class HomeTab extends ConsumerWidget {
         buttonLabel: l10n.retry,
         onPressed: () => ref.invalidate(homeDashboardProvider),
       ),
-      data: (dashboard) => RefreshIndicator(
-        color: const Color(0xFFA78BFA),
-        backgroundColor: const Color(0xFF111226),
-        onRefresh: () async {
-          ref.invalidate(homeDashboardProvider);
-          await ref.read(homeDashboardProvider.future);
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(
-            parent: BouncingScrollPhysics(),
-          ),
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context, dashboard.displayName),
-              const SizedBox(height: 20),
-              _buildFocusCard(context, dashboard),
-              const SizedBox(height: 22),
-              _buildTodayHeader(context, dashboard),
-              const SizedBox(height: 10),
-              _buildNextTasks(context, dashboard),
-              if (dashboard.hasRoadmap) ...[
-                const SizedBox(height: 14),
-                _buildStats(context, dashboard),
-                if (dashboard.nextMilestone != null) ...[
+      data: (dashboard) {
+        final userId = Supabase.instance.client.auth.currentUser?.id;
+
+        if (userId != null) {
+          _scheduleHomeTour(userId);
+        }
+
+        return RefreshIndicator(
+          color: const Color(0xFFA78BFA),
+          backgroundColor: const Color(0xFF111226),
+          onRefresh: () async {
+            ref.invalidate(homeDashboardProvider);
+            await ref.read(homeDashboardProvider.future);
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context, dashboard.displayName),
+                const SizedBox(height: 20),
+                Showcase(
+  key: _tourRoadmapKey,
+  title: 'Your learning roadmap',
+  description:
+      'This card shows your current learning focus. Review the overview '
+      'and select Open Roadmap to explore your complete learning plan.',
+  child: _buildFocusCard(context, dashboard),
+),
+                const SizedBox(height: 22),
+                _buildTodayHeader(context, dashboard),
+                const SizedBox(height: 10),
+                Showcase(
+  key: _tourTasksKey,
+  title: 'Your next actions',
+  description:
+      'Find your upcoming learning tasks here. Select a task to open '
+      'your roadmap and see what you should work on next.',
+  child: _buildNextTasks(context, dashboard),
+),
+                if (dashboard.hasRoadmap) ...[
                   const SizedBox(height: 14),
-                  _buildNextMilestone(context, dashboard),
+                  _buildStats(context, dashboard),
+                  if (dashboard.nextMilestone != null) ...[
+                    const SizedBox(height: 14),
+                    _buildNextMilestone(context, dashboard),
+                  ],
                 ],
+                const SizedBox(height: 20),
               ],
-              const SizedBox(height: 20),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -83,8 +226,8 @@ class HomeTab extends ConsumerWidget {
     final greeting = now.hour < 12
         ? l10n.goodMorning
         : now.hour < 17
-            ? l10n.goodAfternoon
-            : l10n.goodEvening;
+        ? l10n.goodAfternoon
+        : l10n.goodEvening;
     final name = displayName.trim().isEmpty
         ? l10n.fallbackDisplayName
         : displayName.trim();
@@ -119,35 +262,41 @@ class HomeTab extends ConsumerWidget {
           ),
         ),
         const SizedBox(width: 10),
-        Material(
-          color: Colors.transparent,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const ProfileScreen(),
+        Showcase(
+          key: _tourProfileKey,
+          title: 'Your profile',
+          description:
+              'Access your profile here to view your personal account details.',
+          child: Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const ProfileScreen(),
+                  ),
+                );
+              },
+              child: Container(
+                width: 40,
+                height: 40,
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFF806CFF),
+                    width: 1.5,
+                  ),
                 ),
-              );
-            },
-            child: Container(
-              width: 40,
-              height: 40,
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFF806CFF),
-                  width: 1.5,
-                ),
-              ),
-              child: const CircleAvatar(
-                backgroundColor: Color(0xFF17182C),
-                child: Icon(
-                  Icons.person_rounded,
-                  color: Color(0xFFB8B1FF),
-                  size: 21,
+                child: const CircleAvatar(
+                  backgroundColor: Color(0xFF17182C),
+                  child: Icon(
+                    Icons.person_rounded,
+                    color: Color(0xFFB8B1FF),
+                    size: 21,
+                  ),
                 ),
               ),
             ),
@@ -349,7 +498,10 @@ class HomeTab extends ConsumerWidget {
     required Map<String, dynamic> task,
   }) {
     final l10n = AppLocalizations.of(context)!;
-    final title = _stringValue(task['title'] ?? task['task_title'], l10n.fallbackTaskTitle);
+    final title = _stringValue(
+      task['title'] ?? task['task_title'],
+      l10n.fallbackTaskTitle,
+    );
     final rawCategory = _stringValue(task['category'], '');
     final category = _localizedCategory(l10n, rawCategory);
     final rawPhaseTitle = _stringValue(task['phase_title'], '');
@@ -426,20 +578,23 @@ class HomeTab extends ConsumerWidget {
                   if (isInProgress || isResumeMode) ...[
                     const SizedBox(height: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: isLiveSession
                             ? const Color(0xFF63D9DD).withOpacity(0.10)
                             : isResumeMode
-                                ? const Color(0xFFA88AFF).withOpacity(0.12)
-                                : const Color(0xFFFFC857).withOpacity(0.10),
+                            ? const Color(0xFFA88AFF).withOpacity(0.12)
+                            : const Color(0xFFFFC857).withOpacity(0.10),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: isLiveSession
                               ? const Color(0xFF63D9DD).withOpacity(0.30)
                               : isResumeMode
-                                  ? const Color(0xFFA88AFF).withOpacity(0.35)
-                                  : const Color(0xFFFFC857).withOpacity(0.30),
+                              ? const Color(0xFFA88AFF).withOpacity(0.35)
+                              : const Color(0xFFFFC857).withOpacity(0.30),
                         ),
                       ),
                       child: Row(
@@ -449,8 +604,12 @@ class HomeTab extends ConsumerWidget {
                             const _BlinkingPlayIcon()
                           else
                             Icon(
-                              isResumeMode ? Icons.play_arrow_rounded : Icons.hourglass_top_rounded,
-                              color: isResumeMode ? const Color(0xFFA88AFF) : const Color(0xFFFFC857),
+                              isResumeMode
+                                  ? Icons.play_arrow_rounded
+                                  : Icons.hourglass_top_rounded,
+                              color: isResumeMode
+                                  ? const Color(0xFFA88AFF)
+                                  : const Color(0xFFFFC857),
                               size: 12,
                             ),
                           const SizedBox(width: 4),
@@ -458,14 +617,14 @@ class HomeTab extends ConsumerWidget {
                             isLiveSession
                                 ? l10n.liveInProgress
                                 : isResumeMode
-                                    ? l10n.sessionFinishedResume
-                                    : l10n.inProgress,
+                                ? l10n.sessionFinishedResume
+                                : l10n.inProgress,
                             style: TextStyle(
                               color: isLiveSession
                                   ? const Color(0xFF63D9DD)
                                   : isResumeMode
-                                      ? const Color(0xFFA88AFF)
-                                      : const Color(0xFFFFC857),
+                                  ? const Color(0xFFA88AFF)
+                                  : const Color(0xFFFFC857),
                               fontSize: 8,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.35,
@@ -480,8 +639,12 @@ class HomeTab extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             Icon(
-              isCompleted ? Icons.check_circle_rounded : Icons.chevron_right_rounded,
-              color: isCompleted ? const Color(0xFF55E5A5) : Colors.white.withOpacity(0.38),
+              isCompleted
+                  ? Icons.check_circle_rounded
+                  : Icons.chevron_right_rounded,
+              color: isCompleted
+                  ? const Color(0xFF55E5A5)
+                  : Colors.white.withOpacity(0.38),
               size: 19,
             ),
           ],
@@ -559,14 +722,21 @@ class HomeTab extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             caption,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: Colors.white.withOpacity(0.36), fontSize: 9),
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.36),
+              fontSize: 9,
+            ),
           ),
         ],
       ),
@@ -596,8 +766,15 @@ class HomeTab extends ConsumerWidget {
             Container(
               width: 34,
               height: 34,
-              decoration: BoxDecoration(color: const Color(0xFF7C4DFF), borderRadius: BorderRadius.circular(10)),
-              child: const Icon(Icons.flag_rounded, color: Colors.white, size: 18),
+              decoration: BoxDecoration(
+                color: const Color(0xFF7C4DFF),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.flag_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -605,7 +782,9 @@ class HomeTab extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    week == null ? l10n.nextMilestone : l10n.nextMilestoneWeek(week),
+                    week == null
+                        ? l10n.nextMilestone
+                        : l10n.nextMilestoneWeek(week),
                     style: const TextStyle(
                       color: Color(0xFFA99DDB),
                       fontSize: 8.5,
@@ -614,22 +793,34 @@ class HomeTab extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(title, maxLines: 2, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white, fontSize: 11.5)),
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 11.5),
+                  ),
                   if (criteria.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
                       criteria,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: Colors.white.withOpacity(0.38), fontSize: 9.5, height: 1.3),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.38),
+                        fontSize: 9.5,
+                        height: 1.3,
+                      ),
                     ),
                   ],
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.chevron_right_rounded, color: Color(0xFFB7A7FF), size: 20),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: Color(0xFFB7A7FF),
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -658,9 +849,23 @@ class HomeTab extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 5),
-                Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 10.5, height: 1.45)),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.45),
+                    fontSize: 10.5,
+                    height: 1.45,
+                  ),
+                ),
               ],
             ),
           ),
@@ -717,9 +922,7 @@ Future<void> _saveHomeDashboard(
   }
 }
 
-Future<HomeDashboard?> _loadHomeDashboard(
-  String cacheKey,
-) async {
+Future<HomeDashboard?> _loadHomeDashboard(String cacheKey) async {
   try {
     final prefs = await SharedPreferences.getInstance();
     final cachedJson = prefs.getString(cacheKey);
@@ -742,12 +945,11 @@ Future<HomeDashboard?> _loadHomeDashboard(
       displayName: _stringValue(data['displayName'], ''),
       roadmapId: data['roadmapId']?.toString(),
       requestId: data['requestId']?.toString(),
-      generationRequestId:
-          data['generationRequestId']?.toString(),
+      generationRequestId: data['generationRequestId']?.toString(),
       selectedCareerIds: data['selectedCareerIds'] is List
           ? (data['selectedCareerIds'] as List)
-              .map((value) => value.toString())
-              .toList()
+                .map((value) => value.toString())
+                .toList()
           : <String>[],
       roadmapTitle: _stringValue(data['roadmapTitle'], ''),
       roadmapOverview: _stringValue(data['roadmapOverview'], ''),
@@ -789,8 +991,9 @@ String _localizedCategory(AppLocalizations l10n, String rawCategory) {
 }
 
 /// Loads the signed-in user's profile and their latest saved roadmap.
-final homeDashboardProvider =
-    FutureProvider.autoDispose<HomeDashboard>((ref) async {
+final homeDashboardProvider = FutureProvider.autoDispose<HomeDashboard>((
+  ref,
+) async {
   final client = Supabase.instance.client;
   final user = client.auth.currentUser;
 
@@ -802,8 +1005,7 @@ final homeDashboardProvider =
   final cacheKey = 'home_dashboard_${user.id}';
 
   try {
-    final displayName =
-        await ref.watch(userDisplayNameProvider.future);
+    final displayName = await ref.watch(userDisplayNameProvider.future);
 
     final rows = await client
         .from('roadmaps')
@@ -813,9 +1015,7 @@ final homeDashboardProvider =
         .limit(1);
 
     if (rows.isEmpty) {
-      final dashboard = HomeDashboard(
-        displayName: displayName,
-      );
+      final dashboard = HomeDashboard(displayName: displayName);
 
       await _saveHomeDashboard(cacheKey, dashboard);
       return dashboard;
@@ -849,34 +1049,37 @@ final homeDashboardProvider =
         : _asMapList(roadmapData['selected_careers']);
 
     tasks.sort((a, b) {
-      final weekCompare = (_intValue(a['due_week']) ?? 999999)
-          .compareTo(_intValue(b['due_week']) ?? 999999);
+      final weekCompare = (_intValue(a['due_week']) ?? 999999).compareTo(
+        _intValue(b['due_week']) ?? 999999,
+      );
 
       if (weekCompare != 0) return weekCompare;
 
-      final phaseCompare = (_intValue(a['phase_number']) ?? 999999)
-          .compareTo(_intValue(b['phase_number']) ?? 999999);
+      final phaseCompare = (_intValue(a['phase_number']) ?? 999999).compareTo(
+        _intValue(b['phase_number']) ?? 999999,
+      );
 
       if (phaseCompare != 0) return phaseCompare;
 
-      return _priorityRank(a['priority'])
-          .compareTo(_priorityRank(b['priority']));
+      return _priorityRank(
+        a['priority'],
+      ).compareTo(_priorityRank(b['priority']));
     });
 
     milestones.sort(
-      (a, b) => (_intValue(a['target_week']) ?? 999999)
-          .compareTo(_intValue(b['target_week']) ?? 999999),
+      (a, b) => (_intValue(a['target_week']) ?? 999999).compareTo(
+        _intValue(b['target_week']) ?? 999999,
+      ),
     );
 
     final roadmapId = row['id']?.toString();
     final requestId = row['career_request_id']?.toString();
-    final generationRequestId =
-        row['generation_request_id']?.toString();
+    final generationRequestId = row['generation_request_id']?.toString();
 
     final selectedCareerIds = row['selected_career_ids'] is List
         ? (row['selected_career_ids'] as List)
-            .map((value) => value.toString())
-            .toList()
+              .map((value) => value.toString())
+              .toList()
         : <String>[];
 
     final response = <String, dynamic>{
@@ -892,8 +1095,7 @@ final homeDashboardProvider =
     };
 
     final horizon = _intValue(
-      row['planning_horizon_months'] ??
-          roadmapData['planning_horizon_months'],
+      row['planning_horizon_months'] ?? roadmapData['planning_horizon_months'],
     );
 
     final dashboard = HomeDashboard(
@@ -902,10 +1104,7 @@ final homeDashboardProvider =
       requestId: requestId,
       generationRequestId: generationRequestId,
       selectedCareerIds: selectedCareerIds,
-      roadmapTitle: _stringValue(
-        row['title'] ?? roadmapData['title'],
-        '',
-      ),
+      roadmapTitle: _stringValue(row['title'] ?? roadmapData['title'], ''),
       roadmapOverview: _stringValue(
         row['overview'] ?? roadmapData['overview'],
         '',
@@ -1004,11 +1203,24 @@ class _DashboardMessage extends StatelessWidget {
           children: [
             Icon(icon, color: const Color(0xFFA78BFA), size: 34),
             const SizedBox(height: 12),
-            Text(title, textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(height: 6),
-            Text(message, textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white.withOpacity(0.55), fontSize: 11)),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.55),
+                fontSize: 11,
+              ),
+            ),
             const SizedBox(height: 12),
             TextButton(onPressed: onPressed, child: Text(buttonLabel)),
           ],
@@ -1018,13 +1230,18 @@ class _DashboardMessage extends StatelessWidget {
   }
 }
 
-
 List<Map<String, dynamic>> _asMapList(dynamic value) {
   if (value is! List) return <Map<String, dynamic>>[];
-  return value.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList();
+  return value
+      .whereType<Map>()
+      .map((item) => Map<String, dynamic>.from(item))
+      .toList();
 }
 
-List<Map<String, dynamic>> _flattenPhaseList(List<Map<String, dynamic>> phases, String key) {
+List<Map<String, dynamic>> _flattenPhaseList(
+  List<Map<String, dynamic>> phases,
+  String key,
+) {
   final result = <Map<String, dynamic>>[];
   for (final phase in phases) {
     final values = phase[key];
@@ -1057,61 +1274,96 @@ int? _intValue(dynamic value) {
 
 int _priorityRank(dynamic value) {
   switch (value?.toString().toLowerCase()) {
-    case 'high': return 0;
-    case 'medium': return 1;
-    case 'low': return 2;
-    default: return 3;
+    case 'high':
+      return 0;
+    case 'medium':
+      return 1;
+    case 'low':
+      return 2;
+    default:
+      return 3;
   }
 }
 
 bool _isTaskCompleted(Map<String, dynamic> task) {
   if (task['is_completed'] == true || task['completed'] == true) return true;
   final status = task['status']?.toString().toLowerCase().trim();
-  if (status == 'completed' || status == 'complete' || status == 'done') return true;
+  if (status == 'completed' || status == 'complete' || status == 'done')
+    return true;
   final progress = _intValue(task['progress_percent']);
   return progress != null && progress >= 100;
 }
 
 bool _isTaskInProgress(Map<String, dynamic> task) {
   final status = task['status']?.toString().trim().toLowerCase();
-  return status == 'in_progress' || status == 'in progress' || status == 'running';
+  return status == 'in_progress' ||
+      status == 'in progress' ||
+      status == 'running';
 }
 
 bool _hasActiveTaskSession(Map<String, dynamic> task) {
   final status = task['status']?.toString().trim().toLowerCase();
-  final isInProgressStatus = status == 'in_progress' || status == 'in progress' || status == 'running';
+  final isInProgressStatus =
+      status == 'in_progress' || status == 'in progress' || status == 'running';
   final startedAt = task['started_at']?.toString().trim();
   final deadlineAt = task['deadline_at']?.toString().trim();
-  return isInProgressStatus && startedAt != null && startedAt.isNotEmpty && deadlineAt != null && deadlineAt.isNotEmpty;
+  return isInProgressStatus &&
+      startedAt != null &&
+      startedAt.isNotEmpty &&
+      deadlineAt != null &&
+      deadlineAt.isNotEmpty;
 }
 
 bool _isTaskResumeReady(Map<String, dynamic> task) {
   if (_isTaskCompleted(task)) return false;
   final status = task['status']?.toString().trim().toLowerCase();
   const resumeStatuses = {
-    'session_finished', 'session finished', 'paused', 'ready_to_resume', 'ready to resume',
+    'session_finished',
+    'session finished',
+    'paused',
+    'ready_to_resume',
+    'ready to resume',
   };
-  if (resumeStatuses.contains(status) || task['resume_mode'] == true || task['is_resume_mode'] == true || task['can_resume'] == true) {
+  if (resumeStatuses.contains(status) ||
+      task['resume_mode'] == true ||
+      task['is_resume_mode'] == true ||
+      task['can_resume'] == true) {
     return true;
   }
   if (!_isTaskInProgress(task) || _hasActiveTaskSession(task)) return false;
-  final trackedSeconds = _intValue(task['actual_duration_seconds']) ?? ((_intValue(task['actual_duration_minutes']) ?? 0) * 60);
+  final trackedSeconds =
+      _intValue(task['actual_duration_seconds']) ??
+      ((_intValue(task['actual_duration_minutes']) ?? 0) * 60);
   final legacySeconds = _intValue(task['legacy_tracked_seconds']) ?? 0;
-  final savedSessions = task['sessions'] ?? task['time_sessions'] ?? task['task_sessions'] ?? task['session_logs'] ?? task['study_sessions'];
+  final savedSessions =
+      task['sessions'] ??
+      task['time_sessions'] ??
+      task['task_sessions'] ??
+      task['session_logs'] ??
+      task['study_sessions'];
   final hasSavedSessions = savedSessions is List && savedSessions.isNotEmpty;
-  return trackedSeconds > 0 || legacySeconds > 0 || hasSavedSessions || task['last_session_finished_at'] != null;
+  return trackedSeconds > 0 ||
+      legacySeconds > 0 ||
+      hasSavedSessions ||
+      task['last_session_finished_at'] != null;
 }
 
 (IconData, Color) _taskStyle(String category, bool completed) {
   if (completed) return (Icons.check_rounded, const Color(0xFF55E5A5));
   switch (category.toLowerCase()) {
-    case 'project': return (Icons.code_rounded, const Color(0xFFA88AFF));
-    case 'review': return (Icons.quiz_outlined, const Color(0xFF63D9DD));
-    case 'practice': return (Icons.fitness_center_rounded, const Color(0xFFFFC857));
-    case 'foundation': return (Icons.menu_book_rounded, const Color(0xFF8B91FF));
+    case 'project':
+      return (Icons.code_rounded, const Color(0xFFA88AFF));
+    case 'review':
+      return (Icons.quiz_outlined, const Color(0xFF63D9DD));
+    case 'practice':
+      return (Icons.fitness_center_rounded, const Color(0xFFFFC857));
+    case 'foundation':
+      return (Icons.menu_book_rounded, const Color(0xFF8B91FF));
     case 'career_skill':
-    case 'career_specific': return (Icons.work_outline_rounded, const Color(0xFF63D9DD));
-    default: return (Icons.task_alt_rounded, const Color(0xFFA88AFF));
+    case 'career_specific':
+      return (Icons.work_outline_rounded, const Color(0xFF63D9DD));
+    default:
+      return (Icons.task_alt_rounded, const Color(0xFFA88AFF));
   }
 }
 
@@ -1121,15 +1373,22 @@ class _BlinkingPlayIcon extends StatefulWidget {
   State<_BlinkingPlayIcon> createState() => _BlinkingPlayIconState();
 }
 
-class _BlinkingPlayIconState extends State<_BlinkingPlayIcon> with SingleTickerProviderStateMixin {
+class _BlinkingPlayIconState extends State<_BlinkingPlayIcon>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _opacity;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))..repeat(reverse: true);
-    _opacity = Tween<double>(begin: 0.2, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    )..repeat(reverse: true);
+    _opacity = Tween<double>(
+      begin: 0.2,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -1142,7 +1401,11 @@ class _BlinkingPlayIconState extends State<_BlinkingPlayIcon> with SingleTickerP
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: _opacity,
-      child: const Icon(Icons.play_circle_fill_rounded, color: Color(0xFF63D9DD), size: 12),
+      child: const Icon(
+        Icons.play_circle_fill_rounded,
+        color: Color(0xFF63D9DD),
+        size: 12,
+      ),
     );
   }
 }
@@ -1166,9 +1429,10 @@ class _HomeDashboardSkeletonState extends State<_HomeDashboardSkeleton>
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat();
-    _animation = Tween<double>(begin: -1.5, end: 2.5).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.linear),
-    );
+    _animation = Tween<double>(
+      begin: -1.5,
+      end: 2.5,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.linear));
   }
 
   @override
@@ -1237,72 +1501,240 @@ class _HomeDashboardSkeletonContent extends StatelessWidget {
   static const Color _placeholder = Color(0xFF292A46);
   static const Color _border = Color(0xFF292A46);
 
-  Widget _block({double? width, double height = 10, double radius = 6}) => Container(
-    width: width,
-    height: height,
-    decoration: BoxDecoration(color: _placeholder, borderRadius: BorderRadius.circular(radius)),
-  );
+  Widget _block({double? width, double height = 10, double radius = 6}) =>
+      Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: _placeholder,
+          borderRadius: BorderRadius.circular(radius),
+        ),
+      );
 
   Widget _taskRow() => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 13),
     child: Row(
       children: [
-        Container(width: 29, height: 29, decoration: const BoxDecoration(color: _placeholder, shape: BoxShape.circle)),
+        Container(
+          width: 29,
+          height: 29,
+          decoration: const BoxDecoration(
+            color: _placeholder,
+            shape: BoxShape.circle,
+          ),
+        ),
         const SizedBox(width: 10),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _block(width: 155), const SizedBox(height: 7), _block(width: 105, height: 8),
-        ])),
-        const SizedBox(width: 8), _block(width: 13, height: 13, radius: 20),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _block(width: 155),
+              const SizedBox(height: 7),
+              _block(width: 105, height: 8),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        _block(width: 13, height: 13, radius: 20),
       ],
     ),
   );
 
-  Widget _sectionCard({required Widget child, EdgeInsets padding = const EdgeInsets.all(12), double radius = 15, Color background = _surface, Color borderColor = _border}) => Container(
+  Widget _sectionCard({
+    required Widget child,
+    EdgeInsets padding = const EdgeInsets.all(12),
+    double radius = 15,
+    Color background = _surface,
+    Color borderColor = _border,
+  }) => Container(
     width: double.infinity,
     padding: padding,
-    decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(radius), border: Border.all(color: borderColor)),
+    decoration: BoxDecoration(
+      color: background,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(color: borderColor),
+    ),
     child: child,
   );
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _block(width: 125, height: 9), const SizedBox(height: 9), _block(width: 185, height: 17),
-          ])),
-          Container(width: 40, height: 40, padding: const EdgeInsets.all(3), decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFF4D477F), width: 1.5)), child: Container(decoration: const BoxDecoration(color: _placeholder, shape: BoxShape.circle))),
-        ]),
-        const SizedBox(height: 20),
-        _sectionCard(background: const Color(0xFF171A3B), borderColor: const Color(0xFF4D477F), radius: 18, padding: const EdgeInsets.all(15), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(width: 48, height: 48, decoration: BoxDecoration(color: const Color(0xFF29284B), borderRadius: BorderRadius.circular(15))),
-          const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _block(width: 115, height: 8), const SizedBox(height: 11), _block(width: 175, height: 13), const SizedBox(height: 7), _block(width: 145, height: 13), const SizedBox(height: 12), _block(height: 8), const SizedBox(height: 6), _block(width: 155, height: 8), const SizedBox(height: 6), _block(width: 115, height: 8), const SizedBox(height: 14), _block(width: 95, height: 10),
-          ])),
-        ])),
-        const SizedBox(height: 22),
-        Row(children: [Expanded(child: _block(width: 110, height: 15)), _block(width: 80, height: 9)]),
-        const SizedBox(height: 10),
-        _sectionCard(padding: EdgeInsets.zero, child: Column(children: [
-          _taskRow(), Divider(height: 1, thickness: 1, color: Colors.white.withOpacity(0.055)), _taskRow(), Divider(height: 1, thickness: 1, color: Colors.white.withOpacity(0.055)), _taskRow(),
-        ])),
-        const SizedBox(height: 14),
-        Row(children: [
-          Expanded(child: _sectionCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_block(width: 105, height: 9), const SizedBox(height: 13), _block(width: 45, height: 23), const SizedBox(height: 9), _block(width: 105, height: 8)]))),
-          const SizedBox(width: 10),
-          Expanded(child: _sectionCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_block(width: 95, height: 9), const SizedBox(height: 13), _block(width: 65, height: 23), const SizedBox(height: 9), _block(width: 105, height: 8)]))),
-        ]),
-        const SizedBox(height: 14),
-        _sectionCard(child: Row(children: [
-          Container(width: 34, height: 34, decoration: BoxDecoration(color: _placeholder, borderRadius: BorderRadius.circular(10))),
-          const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_block(width: 130, height: 8), const SizedBox(height: 8), _block(width: 155, height: 11), const SizedBox(height: 7), _block(width: 115, height: 8)])),
-          const SizedBox(width: 8), _block(width: 14, height: 14, radius: 20),
-        ])),
-        const SizedBox(height: 20),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _block(width: 125, height: 9),
+                    const SizedBox(height: 9),
+                    _block(width: 185, height: 17),
+                  ],
+                ),
+              ),
+              Container(
+                width: 40,
+                height: 40,
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFF4D477F),
+                    width: 1.5,
+                  ),
+                ),
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: _placeholder,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _sectionCard(
+            background: const Color(0xFF171A3B),
+            borderColor: const Color(0xFF4D477F),
+            radius: 18,
+            padding: const EdgeInsets.all(15),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF29284B),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _block(width: 115, height: 8),
+                      const SizedBox(height: 11),
+                      _block(width: 175, height: 13),
+                      const SizedBox(height: 7),
+                      _block(width: 145, height: 13),
+                      const SizedBox(height: 12),
+                      _block(height: 8),
+                      const SizedBox(height: 6),
+                      _block(width: 155, height: 8),
+                      const SizedBox(height: 6),
+                      _block(width: 115, height: 8),
+                      const SizedBox(height: 14),
+                      _block(width: 95, height: 10),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 22),
+          Row(
+            children: [
+              Expanded(child: _block(width: 110, height: 15)),
+              _block(width: 80, height: 9),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _sectionCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _taskRow(),
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Colors.white.withOpacity(0.055),
+                ),
+                _taskRow(),
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Colors.white.withOpacity(0.055),
+                ),
+                _taskRow(),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _sectionCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _block(width: 105, height: 9),
+                      const SizedBox(height: 13),
+                      _block(width: 45, height: 23),
+                      const SizedBox(height: 9),
+                      _block(width: 105, height: 8),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _sectionCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _block(width: 95, height: 9),
+                      const SizedBox(height: 13),
+                      _block(width: 65, height: 23),
+                      const SizedBox(height: 9),
+                      _block(width: 105, height: 8),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _sectionCard(
+            child: Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: _placeholder,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _block(width: 130, height: 8),
+                      const SizedBox(height: 8),
+                      _block(width: 155, height: 11),
+                      const SizedBox(height: 7),
+                      _block(width: 115, height: 8),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _block(width: 14, height: 14, radius: 20),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
     );
   }
 }

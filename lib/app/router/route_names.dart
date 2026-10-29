@@ -8,6 +8,7 @@ class RouteNames {
   static const signup = 'signup';
   static const forgotPassword = 'forgotPassword';
   static const resetPassword = 'resetPassword';
+  static const emailConfirmed = 'email-confirmed';
   static const languageSelection = 'language_selection';
   static const onboarding = 'onboarding';
   static const journeyGeneration = 'journeyGeneration';
@@ -26,6 +27,7 @@ class RoutePaths {
   static const languageSelection = '/language-selection';
   static const forgotPassword = '/forgot-password';
   static const resetPassword = '/reset-password';
+  static const emailConfirmed = '/email-confirmed';
   static const journeyGeneration = '/journey-generation';
   static const careerRecommendations = '/career-recommendations';
   static const roadmapGeneration = '/roadmap-generation';
